@@ -41,12 +41,12 @@ fn log_error(msg string) {
 
 fn log_success(msg string) {
 	timestamp := time.now().custom_format('YYYY-MM-DD HH:mm:ss')
-	println('${log_prefix} [${timestamp}] [SUCCESS] ✓ ${msg}')
+	println('${log_prefix} [${timestamp}] [SUCCESS] ${msg}')
 }
 
 fn log_warning(msg string) {
 	timestamp := time.now().custom_format('YYYY-MM-DD HH:mm:ss')
-	println('${log_prefix} [${timestamp}] [WARN] ⚠ ${msg}')
+	println('${log_prefix} [${timestamp}] [WARN] ${msg}')
 }
 
 // ============================================================================
@@ -54,7 +54,11 @@ fn log_warning(msg string) {
 // ============================================================================
 
 fn get_system_info_json() string {
-	hostname := os.hostname() or { 'unknown' }
+	hostname := os.hostname() or {
+		log_error('Failed to read hostname')
+		return '{"error": "Failed to read hostname", "status": "error"}'
+	}
+	
 	os_name := os.user_os()
 	mut total_mem := 0
 	mut avail_mem := 0
@@ -70,25 +74,21 @@ fn get_system_info_json() string {
 				parts := line.split(':')
 				if parts.len > 1 {
 					val_str := parts[1].trim_space().replace('kB', '')
-					total_mem = val_str.int() / 1024
+					total_mem = val_str.int()
+					total_mem = total_mem / 1024
 				}
 			} else if line.starts_with('MemAvailable:') {
 				parts := line.split(':')
 				if parts.len > 1 {
 					val_str := parts[1].trim_space().replace('kB', '')
-					avail_mem = val_str.int() / 1024
+					avail_mem = val_str.int()
+					avail_mem = avail_mem / 1024
 				}
 			}
 		}
 	}
 	
-	return json.encode({
-		'hostname': hostname
-		'os': os_name
-		'total_memory_mb': total_mem.str()
-		'available_memory_mb': avail_mem.str()
-		'status': if total_mem > 0 { 'ok' } else { 'degraded' }
-	})
+	return '{"hostname":"${hostname}","os":"${os_name}","total_memory_mb":"${total_mem}","available_memory_mb":"${avail_mem}","status":"${if total_mem > 0 { "ok" } else { "degraded" }}"}'
 }
 
 fn get_memory_stats_json() string {
@@ -107,19 +107,22 @@ fn get_memory_stats_json() string {
 				parts := line.split(':')
 				if parts.len > 1 {
 					val_str := parts[1].trim_space().replace('kB', '')
-					total_mem = val_str.int() / 1024
+					total_mem = val_str.int()
+					total_mem = total_mem / 1024
 				}
 			} else if line.starts_with('MemFree:') {
 				parts := line.split(':')
 				if parts.len > 1 {
 					val_str := parts[1].trim_space().replace('kB', '')
-					free_mem = val_str.int() / 1024
+					free_mem = val_str.int()
+					free_mem = free_mem / 1024
 				}
 			} else if line.starts_with('MemAvailable:') {
 				parts := line.split(':')
 				if parts.len > 1 {
 					val_str := parts[1].trim_space().replace('kB', '')
-					avail_mem = val_str.int() / 1024
+					avail_mem = val_str.int()
+					avail_mem = avail_mem / 1024
 				}
 			}
 		}
@@ -133,14 +136,7 @@ fn get_memory_stats_json() string {
 	used_mem := total_mem - avail_mem
 	percent := if total_mem > 0 { f64(used_mem) / f64(total_mem) * 100.0 } else { 0.0 }
 	
-	return json.encode({
-		'total_mb': total_mem.str()
-		'free_mb': free_mem.str()
-		'available_mb': avail_mem.str()
-		'used_mb': used_mem.str()
-		'percent_used': percent.str()
-		'status': 'ok'
-	})
+	return '{"total_mb":"${total_mem}","free_mb":"${free_mem}","available_mb":"${avail_mem}","used_mb":"${used_mem}","percent_used":"${percent}","status":"ok"}'
 }
 
 fn list_processes_json() string {
@@ -158,22 +154,33 @@ fn list_processes_json() string {
 		}
 		
 		pid := entry.int()
-		if pid == 0 { continue }
+		if pid == 0 {
+			continue
+		}
 		
 		proc_path := '/proc/${pid}'
-		if !os.is_dir(proc_path) { continue }
+		if !os.is_dir(proc_path) {
+			continue
+		}
 		
 		comm_path := '${proc_path}/comm'
-		mut name := os.read_file(comm_path) or { "" }
+		mut name := os.read_file(comm_path) or { '' }
 		name = name.trim_space()
 		
-		if name.len == 0 { continue }
+		if name.len == 0 {
+			continue
+		}
 		
 		count++
 		result << {'pid': pid.str(), 'name': name}
 	}
 	
-	return json.encode(result)
+	encoded := json.encode(result)
+	if encoded == '' {
+		log_error('Failed to encode process list JSON')
+		return '[]'
+	}
+	return encoded
 }
 
 fn browse_directory_json(path string) string {
@@ -198,16 +205,23 @@ fn browse_directory_json(path string) string {
 		full_path := os.join_path(path, entry)
 		is_dir := os.is_dir(full_path)
 		size := os.file_size(full_path)
+		size_str := size.str()
 		
-		files << {'name': entry, 'is_dir': if is_dir { 'true' } else { 'false' }, 'size': size.str(), 'path': full_path}
+		files << {
+			'name': entry
+			'is_dir': if is_dir { 'true' } else { 'false' }
+			'size': size_str
+			'path': full_path
+		}
 	}
 	
-	return json.encode({
-		'path': path
-		'files': json.encode(files)
-		'count': files.len.str()
-		'status': 'ok'
-	})
+	files_json := json.encode(files)
+	if files_json == '' {
+		log_error('Failed to encode files array')
+		return '{"error":"Failed to encode response","status":"error"}'
+	}
+	
+	return '{"path":"${path}","files":${files_json},"count":"${files.len}","status":"ok"}'
 }
 
 // ============================================================================
@@ -218,12 +232,7 @@ fn handle_get_app_info(e &ui.Event) string {
 	log_debug('get_app_info called')
 	timestamp := time.now().custom_format('YYYY-MM-DD HH:mm:ss')
 	
-	return json.encode({
-		'name': app_name
-		'version': app_version
-		'timestamp': timestamp
-		'status': 'ok'
-	})
+	return '{"name":"${app_name}","version":"${app_version}","timestamp":"${timestamp}","status":"ok"}'
 }
 
 fn handle_get_system_info(e &ui.Event) string {
@@ -244,7 +253,9 @@ fn handle_list_processes(e &ui.Event) string {
 fn handle_browse_directory(e &ui.Event) string {
 	log_debug('browse_directory called')
 	mut path := e.element
-	if path.len == 0 { path = '/' }
+	if path.len == 0 {
+		path = '/'
+	}
 	return browse_directory_json(path)
 }
 
@@ -261,17 +272,9 @@ fn create_window_with_retry() ?ui.Window {
 		
 		w := ui.new_window()
 		
-		if true {
-			log_success('Window created successfully on attempt ${attempts}')
-			return w
-		}
-		
-		log_error('Window creation attempt ${attempts} failed')
-		
-		if attempts < max_retries {
-			log_info('Retrying in ${retry_delay_ms}ms...')
-			time.sleep(retry_delay_ms)
-		}
+		// Window created successfully
+		log_success('Window created successfully on attempt ${attempts}')
+		return w
 	}
 	
 	log_error('Failed to create window after ${max_retries} attempts')
@@ -285,7 +288,6 @@ fn verify_root_folder(path string) bool {
 		log_error('Root folder not found: ${path}')
 		return false
 	}
-	
 	
 	files := os.ls(path) or {
 		log_error('Failed to list root folder contents')
@@ -307,14 +309,21 @@ fn verify_root_folder(path string) bool {
 	return true
 }
 
-fn open_window_with_fallback(w ui.Window, root_folder string) bool {
+fn open_window(w ui.Window, root_folder string) bool {
 	log_info('Opening window with index.html...')
 	
-	w.show('index.html', ui.ShowOptions{}) or { return false }
+	w.show('index.html', ui.ShowOptions{}) or {
+		log_error('Failed to open window')
+		log_error('Troubleshooting:')
+		log_error('  1. Make sure you have a display server running (X11/Wayland)')
+		log_error('  2. Check that a browser is installed (Chrome, Firefox, etc.)')
+		log_error('  3. If running headless, set DISPLAY environment variable')
+		log_error('  4. Try: export DISPLAY=:0 && ./run.sh dev')
+		return false
+	}
 	
-        log_success('Window opened successfully')
-        return true
-	
+	log_success('Window opened successfully')
+	return true
 }
 
 // ============================================================================
@@ -343,7 +352,6 @@ fn main() {
 		log_error('Critical: Cannot continue without UI window')
 		return
 	}
-	log_success('Window created successfully')
 	
 	// Bind JavaScript handlers
 	log_info('Binding JavaScript handlers...')
@@ -369,7 +377,7 @@ fn main() {
 	ui.set_root_folder(root_folder)
 	
 	// Open window
-	if !open_window_with_fallback(w, root_folder) {
+	if !open_window(w, root_folder) {
 		log_error('Failed to open window, application cannot continue')
 		return
 	}

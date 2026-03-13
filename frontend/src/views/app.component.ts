@@ -180,7 +180,21 @@ export class AppComponent implements OnInit, OnDestroy {
   selectBottomTab(tabId: string, event: Event): void {
     event.stopPropagation();
     this.activeBottomTab.set(tabId);
-    if (this.bottomCollapsed()) this.bottomCollapsed.set(false);
+    
+    // Always expand panel when switching tabs
+    if (this.bottomCollapsed()) {
+      this.bottomCollapsed.set(false);
+    }
+    
+    // For devtools, ensure full expansion to half-screen
+    if (tabId === 'devtools') {
+      // Force expand animation to complete
+      setTimeout(() => {
+        this.bottomCollapsed.set(false);
+        this.resizeAllWindows();
+      }, 50);
+    }
+    
     this.eventBus.publish('ui:bottom-panel:tab-changed', { tabId });
     setTimeout(() => this.resizeAllWindows(), 320);
   }

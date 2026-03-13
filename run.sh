@@ -176,22 +176,22 @@ build_frontend() {
 # Build V application
 build_v_app() {
     log_step "Building V application..."
-    
+
     log_v "Compiling with GCC..."
     echo -e "${YELLOW}----------------------------------------${NC}"
-    
-    # Build with verbose output
-    v -cc gcc -o ${BINARY_NAME} . 2>&1
-    
+
+    # Build with verbose output from src/ directory
+    v -cc gcc -o ${BINARY_NAME} ./src 2>&1
+
     BUILD_STATUS=$?
-    
+
     echo -e "${YELLOW}----------------------------------------${NC}"
-    
+
     if [ ${BUILD_STATUS} -ne 0 ]; then
         log_error "V build failed!"
         return 1
     fi
-    
+
     if [ -f "${BINARY_NAME}" ]; then
         BINARY_SIZE=$(du -h ${BINARY_NAME} | cut -f1)
         log_success "V app built: ${BINARY_NAME} (${BINARY_SIZE})"
@@ -199,7 +199,7 @@ build_v_app() {
         log_error "Binary not found after build!"
         return 1
     fi
-    
+
     echo ""
     return 0
 }

@@ -1,12 +1,15 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { GlobalErrorService } from '../core/global-error.service';
+import { ErrorRecoveryService } from '../core/error-recovery.service';
 import { WinBoxInstance, WinBoxService } from '../core/winbox.service';
 import { BottomPanelTab, Card, TECH_CARDS, WindowEntry } from '../models';
+import { ErrorCode } from '../types/error.types';
 import { EventBusViewModel } from '../viewmodels/event-bus.viewmodel';
 import { getLogger } from '../viewmodels/logger';
 import { WindowStateViewModel } from '../viewmodels/window-state.viewmodel';
 import { ErrorModalComponent } from './shared/error-modal.component';
+import { ErrorBoundaryComponent } from './shared/error-boundary.component';
 import { ConnectionMonitorService } from '../viewmodels/connection-monitor.service';
 import { ViewportService } from '../viewmodels/viewport.service';
 import { DevToolsComponent } from './devtools/devtools.component';
@@ -14,12 +17,13 @@ import { DevToolsComponent } from './devtools/devtools.component';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, ErrorModalComponent, DevToolsComponent],
+  imports: [CommonModule, ErrorModalComponent, ErrorBoundaryComponent, DevToolsComponent],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
 })
 export class AppComponent implements OnInit, OnDestroy {
   readonly globalErrorService = inject(GlobalErrorService);
+  private readonly errorRecoveryService = inject(ErrorRecoveryService);
   private readonly winboxService = inject(WinBoxService);
   private readonly logger = getLogger('app.component');
   private readonly eventBus = inject(EventBusViewModel<Record<string, unknown>>);
@@ -263,7 +267,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
     if (!WinBoxConstructor) {
       this.logger.error('WinBox not found on window object!');
-      this.showWinBoxError('WinBox library not loaded');
+      this.reportWinBoxError('WinBox library not loaded');
       return;
     }
 
@@ -289,7 +293,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
       if (!box) {
         this.logger.error('WinBox constructor returned null');
-        this.showWinBoxError('Failed to create window');
+        this.reportWinBoxError('Failed to create window');
         return;
       }
 
@@ -344,7 +348,54 @@ export class AppComponent implements OnInit, OnDestroy {
       }, 50);
     } catch (error) {
       this.logger.error('Error creating WinBox window', { error, windowId });
-      this.showWinBoxError(`Error: ${error instanceof Error ? error.message : String(error)}`);
+      this.reportWinBoxError(error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  private reportWinBoxError(message: string): void {
+    // Report to global error service for proper handling
+    this.globalErrorService.report(
+      {
+        code: ErrorCode.InternalError,
+        message: 'Failed to create window: ' + message,
+        details: 'WinBox window creation failed',
+        context: {
+          component: 'AppComponent',
+          operation: 'createWinBoxWindow',
+          winboxAvailable: String(this.winboxService.isAvailable()),
+        },
+      },
+      {
+        source: 'winbox',
+        title: 'Window Creation Error',
+      }
+    );
+
+    // Also show temporary notification for immediate feedback
+    this.showWinBoxNotification(message);
+  }
+
+  private showWinBoxNotification(message: string): void {
+    if (typeof document !== 'undefined') {
+      const notification = document.createElement('div');
+      notification.style.cssText =
+        'position:fixed;bottom:80px;right:16px;background:#fef2f2;border:1px solid #fca5a5;color:#991b1b;padding:16px;border-radius:8px;z-index:9999;font-family:sans-serif;max-width:400px;box-shadow:0 4px 12px rgba(239,68,68,0.2);animation:slideIn 0.3s ease-out;';
+      notification.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <span style="font-size:18px;">🚨</span>
+          <strong style="font-size:14px;">Window Error</strong>
+        </div>
+        <div style="font-size:13px;line-height:1.5;">${message}</div>
+        <div style="font-size:11px;color:#666;margin-top:8px;">
+          Check the error panel for details and recovery options
+        </div>
+      `;
+      document.body.appendChild(notification);
+      setTimeout(() => {
+        notification.style.opacity = '0';
+        notification.style.transition = 'opacity 0.3s';
+        setTimeout(() => notification.remove(), 300);
+      }, 8000);
     }
   }
 
@@ -450,6 +501,11 @@ export class AppComponent implements OnInit, OnDestroy {
     event.stopPropagation();
     this.closeAllBoxes();
     this.eventBus.publish('window:all-closed', { timestamp: Date.now() });
+  }
+
+  dismissErrorBoundary(): void {
+    this.errorRecoveryService.clearAllErrors();
+    this.logger.info('Error boundary dismissed by user');
   }
 
   hasFocusedWindow(): boolean {

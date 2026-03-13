@@ -33,18 +33,20 @@ Simple battery monitor desktop app using V + WebUI with Angular frontend and Rsb
 
 ```
 .
-├── main.v                    # V backend (battery info, WebUI)
-├── v.mod                     # V module config
-├── run.sh                    # Enhanced build/run script
-├── .vproject.json            # V project configuration
+├── src/
+│   ├── main.v                    # V backend entry point
+│   └── errors.v                  # Error handling system
+├── v.mod                         # V module config
+├── run.sh                        # Enhanced build/run script
+├── .vproject.json                # V project configuration
 ├── frontend/
-│   ├── src/                  # Angular source code
-│   ├── rsbuild.config.ts     # Rsbuild configuration
-│   ├── package.json          # Node.js dependencies
-│   └── dist/browser/         # Build output (served by V)
+│   ├── src/                      # Angular source code
+│   ├── rsbuild.config.ts         # Rsbuild configuration
+│   ├── package.json              # Node.js dependencies
+│   └── dist/browser/             # Build output (served by V)
 ├── thirdparty/
-│   └── v-webui/              # WebUI bindings
-└── battery                   # Compiled binary (after build)
+│   └── v-webui/                  # WebUI bindings
+└── desktopapp                    # Compiled binary (after build)
 ```
 
 ## Commands

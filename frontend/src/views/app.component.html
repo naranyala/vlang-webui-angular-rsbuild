@@ -221,6 +221,9 @@
     </div>
   </footer>
 
+  <!-- Error Boundary -->
+  <app-error-boundary [visible]="true" (dismissed)="dismissErrorBoundary()" />
+
   <!-- Error Modal -->
   <app-error-modal [error]="globalErrorService.activeError()" (dismissed)="globalErrorService.dismiss()" />
 </div>

@@ -1,2 +1,32 @@
 
-frontend/node_modules
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+frontend/.angular/
+
+# V binaries
+battery
+desktopapp
+*.exe
+*.bin
+
+# Build artifacts
+*.o
+*.a
+*.so
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+.fuse_hidden*
+
+# Logs
+*.log
+npm-debug.log*

@@ -1,0 +1,29 @@
+{
+  "name": "battery",
+  "version": "0.1.0",
+  "description": "Battery Monitor with WebUI",
+  "main": "main.v",
+  "build": {
+    "compiler": "gcc",
+    "flags": [
+      "-cc",
+      "gcc"
+    ],
+    "verbose": true,
+    "show_c_commands": true
+  },
+  "dependencies": [
+    "vwebui"
+  ],
+  "paths": {
+    "frontend": "frontend",
+    "frontend_dist": "frontend/dist/browser",
+    "thirdparty": "thirdparty"
+  },
+  "scripts": {
+    "dev": "./run.sh dev",
+    "build": "./run.sh build",
+    "clean": "./run.sh clean",
+    "run": "./run.sh run"
+  }
+}

@@ -23,19 +23,19 @@ When running successfully, you should see:
 
 [APP] [2026-03-13 09:00:00] [INFO] Starting Desktop App application...
 [APP] [2026-03-13 09:00:00] [INFO] Creating WebUI window...
-[APP] [2026-03-13 09:00:00] [SUCCESS] + Window created successfully
+[APP] [2026-03-13 09:00:00] [SUCCESS] Window created successfully
 [APP] [2026-03-13 09:00:00] [INFO] Opening window with index.html...
-[APP] [2026-03-13 09:00:01] [SUCCESS] + Window opened successfully
-[APP] [2026-03-13 09:00:01] [SUCCESS] + Application running. Press Ctrl+C to exit.
+[APP] [2026-03-13 09:00:01] [SUCCESS] Window opened successfully
+[APP] [2026-03-13 09:00:01] [SUCCESS] Application running. Press Ctrl+C to exit.
 ```
 
-**A browser window should open automatically** showing the application.
+A browser window should open automatically showing the application.
 
 ---
 
 ## Common Issues and Solutions
 
-### Issue 1: "Failed to open window" Error
+### Issue 1: Failed to open window Error
 
 **Error Message:**
 ```
@@ -47,6 +47,7 @@ When running successfully, you should see:
 **Solutions:**
 
 #### On Linux with Display:
+
 ```bash
 # Check if DISPLAY is set
 echo $DISPLAY
@@ -59,6 +60,7 @@ export DISPLAY=:0
 ```
 
 #### On Headless Server (No Display):
+
 WebUI requires a browser. Options:
 
 1. **Use Xvfb (Virtual Framebuffer):**
@@ -66,7 +68,7 @@ WebUI requires a browser. Options:
    # Install Xvfb
    sudo apt install xvfb  # Debian/Ubuntu
    sudo dnf install xvfb  # Fedora
-   
+
    # Run with virtual display
    xvfb-run -a ./run.sh dev
    ```
@@ -75,7 +77,7 @@ WebUI requires a browser. Options:
    ```bash
    # Connect with X11 forwarding
    ssh -X user@server
-   
+
    # Then run
    ./run.sh dev
    ```
@@ -85,7 +87,7 @@ WebUI requires a browser. Options:
    ```bash
    # On server - run in background
    ./desktopapp &
-   
+
    # On client machine - access via browser
    # http://server-ip:port
    ```
@@ -134,10 +136,10 @@ sudo dpkg -i google-chrome-stable_current_amd64.deb
    ```bash
    # Check V compiler
    v version
-   
+
    # Check GCC
    gcc --version
-   
+
    # Check for required libraries (Linux)
    ldd ./desktopapp | grep "not found"
    ```
@@ -186,7 +188,7 @@ sudo lsof -i :8080
 # Kill process
 sudo kill -9 <PID>
 
-# Or use different port (modify main.v)
+# Or use different port (modify src/main.v)
 ```
 
 ---
@@ -281,7 +283,7 @@ The application logs everything to stdout:
 ## Advanced Configuration
 
 ### Change Port
-Edit `main.v`:
+Edit `src/main.v`:
 ```v
 // Before w.show()
 w.set_port(8080)  // Set specific port
@@ -298,7 +300,7 @@ webui_log=1 ./run.sh build
 ```
 
 ### Set Custom Root Folder
-Edit `main.v`:
+Edit `src/main.v`:
 ```v
 root_folder := '/path/to/frontend/dist/browser'
 ```
@@ -312,7 +314,7 @@ If you still have issues:
 1. **Check logs carefully** - Most errors are self-explanatory
 2. **Run with verbose output** - `webui_log=1 ./run.sh build`
 3. **Check system requirements** - Display, browser, libraries
-4. **Review the code** - `main.v` and error messages
+4. **Review the code** - `src/main.v` and error messages
 
 ---
 

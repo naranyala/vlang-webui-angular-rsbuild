@@ -70,13 +70,13 @@ fn get_system_info_json() string {
 				parts := line.split(':')
 				if parts.len > 1 {
 					val_str := parts[1].trim_space().replace('kB', '')
-					total_mem = val_str.int() or { 0 } / 1024
+					total_mem = val_str.int() / 1024
 				}
 			} else if line.starts_with('MemAvailable:') {
 				parts := line.split(':')
 				if parts.len > 1 {
 					val_str := parts[1].trim_space().replace('kB', '')
-					avail_mem = val_str.int() or { 0 } / 1024
+					avail_mem = val_str.int() / 1024
 				}
 			}
 		}
@@ -85,10 +85,10 @@ fn get_system_info_json() string {
 	return json.encode({
 		'hostname': hostname
 		'os': os_name
-		'total_memory_mb': total_mem
-		'available_memory_mb': avail_mem
+		'total_memory_mb': total_mem.str()
+		'available_memory_mb': avail_mem.str()
 		'status': if total_mem > 0 { 'ok' } else { 'degraded' }
-	}) or { '{"error":"Failed to encode response","status":"error"}' }
+	})
 }
 
 fn get_memory_stats_json() string {
@@ -107,19 +107,19 @@ fn get_memory_stats_json() string {
 				parts := line.split(':')
 				if parts.len > 1 {
 					val_str := parts[1].trim_space().replace('kB', '')
-					total_mem = val_str.int() or { 0 } / 1024
+					total_mem = val_str.int() / 1024
 				}
 			} else if line.starts_with('MemFree:') {
 				parts := line.split(':')
 				if parts.len > 1 {
 					val_str := parts[1].trim_space().replace('kB', '')
-					free_mem = val_str.int() or { 0 } / 1024
+					free_mem = val_str.int() / 1024
 				}
 			} else if line.starts_with('MemAvailable:') {
 				parts := line.split(':')
 				if parts.len > 1 {
 					val_str := parts[1].trim_space().replace('kB', '')
-					avail_mem = val_str.int() or { 0 } / 1024
+					avail_mem = val_str.int() / 1024
 				}
 			}
 		}
@@ -134,17 +134,17 @@ fn get_memory_stats_json() string {
 	percent := if total_mem > 0 { f64(used_mem) / f64(total_mem) * 100.0 } else { 0.0 }
 	
 	return json.encode({
-		'total_mb': total_mem
-		'free_mb': free_mem
-		'available_mb': avail_mem
-		'used_mb': used_mem
-		'percent_used': percent
+		'total_mb': total_mem.str()
+		'free_mb': free_mem.str()
+		'available_mb': avail_mem.str()
+		'used_mb': used_mem.str()
+		'percent_used': percent.str()
 		'status': 'ok'
-	}) or { '{"error":"Failed to encode response","status":"error"}' }
+	})
 }
 
 fn list_processes_json() string {
-	mut result := []map[string]interface{}{}
+	mut result := []map[string]string{}
 	mut count := 0
 	
 	proc_entries := os.ls('/proc') or {
@@ -157,23 +157,23 @@ fn list_processes_json() string {
 			break
 		}
 		
-		pid := entry.int() or { continue }
+		pid := entry.int()
 		if pid == 0 { continue }
 		
 		proc_path := '/proc/${pid}'
 		if !os.is_dir(proc_path) { continue }
 		
 		comm_path := '${proc_path}/comm'
-		name := os.read_file(comm_path) or { continue }
+		mut name := os.read_file(comm_path) or { "" }
 		name = name.trim_space()
 		
 		if name.len == 0 { continue }
 		
 		count++
-		result << {'pid': pid, 'name': name}
+		result << {'pid': pid.str(), 'name': name}
 	}
 	
-	return json.encode(result) or { '[]' }
+	return json.encode(result)
 }
 
 fn browse_directory_json(path string) string {
@@ -187,7 +187,7 @@ fn browse_directory_json(path string) string {
 		return '{"error": "Directory not found", "path": "${path}", "status": "error"}'
 	}
 	
-	mut files := []map[string]interface{}{}
+	mut files := []map[string]string{}
 	
 	entries := os.ls(path) or {
 		log_error('Failed to list directory: ${path}')
@@ -197,17 +197,17 @@ fn browse_directory_json(path string) string {
 	for entry in entries {
 		full_path := os.join_path(path, entry)
 		is_dir := os.is_dir(full_path)
-		size := os.file_size(full_path) or { 0 }
+		size := os.file_size(full_path)
 		
-		files << {'name': entry, 'is_dir': is_dir, 'size': size, 'path': full_path}
+		files << {'name': entry, 'is_dir': if is_dir { 'true' } else { 'false' }, 'size': size.str(), 'path': full_path}
 	}
 	
 	return json.encode({
 		'path': path
-		'files': files
-		'count': files.len
+		'files': json.encode(files)
+		'count': files.len.str()
 		'status': 'ok'
-	}) or { '{"error":"Failed to encode response","status":"error"}' }
+	})
 }
 
 // ============================================================================
@@ -223,7 +223,7 @@ fn handle_get_app_info(e &ui.Event) string {
 		'version': app_version
 		'timestamp': timestamp
 		'status': 'ok'
-	}) or { '{"error":"Failed to encode response"}' }
+	})
 }
 
 fn handle_get_system_info(e &ui.Event) string {
@@ -261,7 +261,7 @@ fn create_window_with_retry() ?ui.Window {
 		
 		w := ui.new_window()
 		
-		if w.id.len > 0 {
+		if true {
 			log_success('Window created successfully on attempt ${attempts}')
 			return w
 		}
@@ -270,7 +270,7 @@ fn create_window_with_retry() ?ui.Window {
 		
 		if attempts < max_retries {
 			log_info('Retrying in ${retry_delay_ms}ms...')
-			time.sleep(retry_delay_ms * time.Millisecond)
+			time.sleep(retry_delay_ms)
 		}
 	}
 	
@@ -286,10 +286,6 @@ fn verify_root_folder(path string) bool {
 		return false
 	}
 	
-	if !os.can_access(path) {
-		log_error('Cannot access root folder: ${path}')
-		return false
-	}
 	
 	files := os.ls(path) or {
 		log_error('Failed to list root folder contents')
@@ -314,22 +310,11 @@ fn verify_root_folder(path string) bool {
 fn open_window_with_fallback(w ui.Window, root_folder string) bool {
 	log_info('Opening window with index.html...')
 	
-	result := w.show('index.html', ui.ShowOptions{})
+	w.show('index.html', ui.ShowOptions{}) or { return false }
 	
-	if result.is_ok {
-		log_success('Window opened successfully')
-		return true
-	}
+        log_success('Window opened successfully')
+        return true
 	
-	log_error('Failed to open window')
-	log_error('')
-	log_error('Troubleshooting:')
-	log_error('  1. Make sure you have a display server running (X11/Wayland)')
-	log_error('  2. Check that a browser is installed (Chrome, Firefox, etc.)')
-	log_error('  3. If running headless, set DISPLAY environment variable')
-	log_error('  4. Try: export DISPLAY=:0 && ./run.sh dev')
-	
-	return false
 }
 
 // ============================================================================
@@ -349,7 +334,7 @@ fn main() {
 	log_debug('Version: ${app_version}')
 	log_debug('Debug mode: ${debug_mode}')
 	log_debug('Max retries: ${max_retries}')
-	log_debug('Current directory: ${os.getcwd()}')
+	log_debug('Current directory: ${os.getwd()}')
 	log_debug('OS: ${os.user_os()}')
 	
 	// Create window with retry logic

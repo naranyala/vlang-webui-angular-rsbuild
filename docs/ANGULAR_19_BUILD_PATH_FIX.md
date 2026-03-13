@@ -1,18 +1,20 @@
-# Angular 19+ Build Output Path Fix
+# Angular 19 Build Output Path Configuration
 
-## Issue
+## Issue Description
 
 The WebUI application failed to load the Angular final build with error:
+
 ```
-⚠ Resource Not Available
+Warning: Resource Not Available
 The requested resource is not available.
 ```
 
 ## Root Cause
 
-**Angular 19+** with the **application builder** (`@angular-devkit/build-angular:application`) changed the output directory structure:
+**Angular 19+** with the **application builder** (`@angular-devkit/build-angular:application`) changed the output directory structure.
 
 ### Old Structure (Angular 18 and earlier)
+
 ```
 frontend/dist/browser/
 ├── index.html
@@ -22,9 +24,10 @@ frontend/dist/browser/
 ```
 
 ### New Structure (Angular 19+)
+
 ```
 frontend/dist/browser/
-├── browser/              ← New nested directory
+├── browser/              <-- New nested directory
 │   ├── index.html
 │   ├── main-XXXXX.js
 │   ├── polyfills-XXXXX.js
@@ -37,27 +40,34 @@ frontend/dist/browser/
 
 Updated the root folder path in two locations:
 
-### 1. main.v
-```v
-// Before
-root_folder := 'frontend/dist/browser'
+### 1. src/main.v
 
-// After
+**Before:**
+```v
+root_folder := 'frontend/dist/browser'
+```
+
+**After:**
+```v
 root_folder := 'frontend/dist/browser/browser'
 ```
 
 ### 2. run.sh
-```bash
-# Before
-BUILD_OUTPUT_DIR="${FRONTEND_DIR}/dist/browser"
 
-# After
+**Before:**
+```bash
+BUILD_OUTPUT_DIR="${FRONTEND_DIR}/dist/browser"
+```
+
+**After:**
+```bash
 BUILD_OUTPUT_DIR="${FRONTEND_DIR}/dist/browser/browser"
 ```
 
 ## Verification
 
 After the fix, the application correctly identifies all build artifacts:
+
 ```
 [APP] [2026-03-13 09:29:15] [DEBUG] Files in root folder:
 [APP] [2026-03-13 09:29:15] [DEBUG]   - favicon.ico
@@ -101,10 +111,10 @@ If using Rsbuild instead of Angular CLI, the output structure may differ. Check 
 
 ## Files Modified
 
-1. `main.v` - Updated `root_folder` path
+1. `src/main.v` - Updated `root_folder` path
 2. `run.sh` - Updated `BUILD_OUTPUT_DIR` variable
 
-## Testing
+## Testing Procedure
 
 1. Rebuild the frontend:
    ```bash
@@ -133,5 +143,5 @@ If using Rsbuild instead of Angular CLI, the output structure may differ. Check 
 
 ---
 
-**Date:** March 13, 2026  
-**Status:** ✅ Fixed
+**Date:** March 13, 2026
+**Status:** Fixed

@@ -237,12 +237,56 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   closeAllBoxes(): void {
-    this.existingBoxes.forEach((box) => {
-      if (box) box.close();
+    this.logger.info('Closing all windows', { count: this.existingBoxes.length });
+    
+    // Create a copy to iterate since we'll be modifying the array
+    const boxesToClose = [...this.existingBoxes];
+    
+    boxesToClose.forEach((box, index) => {
+      if (!box) return;
+      
+      const windowId = box.__windowId;
+      const cardId = box.__cardId;
+      
+      this.logger.debug('Closing window', { windowId, title: box.__cardTitle, index });
+      
+      // Restore if minimized (required before close)
+      if (box.min) {
+        box.restore();
+      }
+      
+      // Force close the window immediately
+      // This removes the DOM element
+      try {
+        box.close(true);
+      } catch (error) {
+        this.logger.error('Error closing window', { windowId, error });
+      }
+      
+      // Manually clean up tracking (since close(true) bypasses onclose)
+      const boxIndex = this.existingBoxes.indexOf(box);
+      if (boxIndex > -1) {
+        this.existingBoxes.splice(boxIndex, 1);
+      }
+      
+      if (cardId) {
+        this.windowIdByCardId.delete(cardId);
+      }
+      
+      if (windowId) {
+        this.eventBus.publish('window:closed', { id: windowId, title: box.__cardTitle || 'Unknown' });
+        this.windowState.sendStateChange(windowId, 'closed', box.__cardTitle || 'Unknown');
+      }
     });
-    this.existingBoxes = [];
+    
+    // Clear all UI state
     this.windowEntries.set([]);
     this.windowIdByCardId.clear();
+    
+    this.logger.info('All windows closed', { 
+      remaining: this.existingBoxes.length,
+      windowEntries: this.windowEntries().length 
+    });
   }
 
   openCard(card: Card): void {
@@ -512,7 +556,9 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   closeAllWindows(event: Event): void {
+    event.preventDefault();
     event.stopPropagation();
+    this.logger.info('Close all windows button clicked');
     this.closeAllBoxes();
     this.eventBus.publish('window:all-closed', { timestamp: Date.now() });
   }

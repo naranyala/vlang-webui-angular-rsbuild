@@ -71,6 +71,15 @@ export interface WinBoxInstance {
   full: boolean;
   focused: boolean;
   hidden: boolean;
+  // Event handlers
+  onfocus?: () => void;
+  onblur?: () => void;
+  onminimize?: () => void;
+  onmaximize?: () => void;
+  onrestore?: () => void;
+  onclose?: () => boolean | void;
+  onresize?: (width: number, height: number) => void;
+  onmove?: (x: number, y: number) => void;
   // Custom properties added by our application
   __windowId?: string;
   __cardTitle?: string;

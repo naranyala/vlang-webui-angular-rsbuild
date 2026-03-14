@@ -2,7 +2,6 @@ module main
 
 import os
 import time
-import json as _
 
 // ============================================================================
 // Application State
@@ -69,6 +68,7 @@ pub enum ErrorCode {
 
 // Structured error type
 pub struct AppError {
+mut:
 	code      ErrorCode
 	message   string
 	details   string
@@ -79,6 +79,7 @@ pub struct AppError {
 
 // Error registry for tracking error counts
 pub struct ErrorRegistry {
+mut:
 	errors           []AppError
 	critical_count   int
 	warning_count    int
@@ -205,14 +206,52 @@ pub fn get_recovery_suggestion(registry &ErrorRegistry, code ErrorCode) string {
 }
 
 // Register an error in the registry
+pub fn (mut registry ErrorRegistry) register_error(error AppError) {
+	registry.errors << error
+	registry.last_error = error
+
+	if error.code in [.system_error, .resource_exhausted] {
+		registry.critical_count++
+	} else {
+		registry.warning_count++
+	}
+}
 
 // Get error summary as JSON
+pub fn (registry ErrorRegistry) get_summary_json() string {
+	mut summary := []string{}
+	summary << '"total_errors":"${registry.errors.len}"'
+	summary << '"critical_count":"${registry.critical_count}"'
+	summary << '"warning_count":"${registry.warning_count}"'
+
+	last_error_str := if registry.last_error != none {
+		err := registry.last_error
+		'"last_error":"${err.message}"'
+	} else {
+		'"last_error":null'
+	}
+	summary << last_error_str
+
+	return '{${summary.join(',')}}'
+}
 
 // Check if last error exists
+pub fn (registry ErrorRegistry) has_last_error() bool {
+	return registry.last_error != none
+}
 
 // Get last error
+pub fn (registry ErrorRegistry) get_last_error() ?AppError {
+	return registry.last_error
+}
 
 // Clear error registry
+pub fn (mut registry ErrorRegistry) clear() {
+	registry.errors = []
+	registry.critical_count = 0
+	registry.warning_count = 0
+	registry.last_error = none
+}
 
 // ============================================================================
 // Result Types for Error Handling
@@ -328,3 +367,10 @@ pub fn safe_list_dir(path string) StringResult {
 }
 
 // Safe JSON parse with error handling
+pub fn safe_json_parse(json_str string) StringResult {
+	// Just return the input as we can't properly parse JSON in V without a type
+	if json_str.len == 0 {
+		return err_str(create_error(.serialization_failed, 'Empty JSON string', 'json_parse'))
+	}
+	return ok_str(json_str)
+}

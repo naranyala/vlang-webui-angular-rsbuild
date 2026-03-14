@@ -98,6 +98,11 @@ export class AppComponent implements OnInit, OnDestroy {
     this.logger.info('Application ready');
     this.closeAllBoxes();
 
+    // Auto-open login window after a short delay
+    setTimeout(() => {
+      this.openLoginWindow();
+    }, 500);
+
     const winboxAvailable = this.winboxService.isAvailable() || !!(window as any).WinBox;
 
     if (typeof document !== 'undefined') {
@@ -164,6 +169,16 @@ export class AppComponent implements OnInit, OnDestroy {
     this.searchQuery.set('');
     this.eventBus.publish('search:cleared', { timestamp: Date.now() });
   }
+
+  openLoginWindow(): void {
+    const loginCard = this.cards[0];
+    if (loginCard) {
+      this.openCard(loginCard);
+    }
+  }
+
+  // Note: Search functionality is currently disabled in the UI
+  // Methods kept for potential future use
 
   toggleTop(): void {
     this.viewportService.toggleTop();

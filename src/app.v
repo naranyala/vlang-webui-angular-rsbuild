@@ -8,6 +8,7 @@ import time
 // ============================================================================
 
 // App represents the main application
+@[heap]
 pub struct App {
 mut:
 	logging          LoggingService
@@ -15,6 +16,7 @@ mut:
 	file             FileService
 	network          NetworkService
 	config           ConfigService
+	user             UserService
 
 	app_name         string
 	app_version      string
@@ -41,12 +43,18 @@ pub fn new_app(app_name string, app_version string) App {
 	mut config := ConfigService{}
 	config.initialize()
 
+	mut user := UserService{}
+	user.initialize() or {
+		logging.error('Failed to initialize user service: ${err}')
+	}
+
 	return App{
 		logging:      logging
 		system_info:  system_info
 		file:         file
 		network:      network
 		config:       config
+		user:         user
 		app_name:     app_name
 		app_version:  app_version
 	}
@@ -65,6 +73,7 @@ pub fn (mut app App) shutdown() {
 	app.file.shutdown()
 	app.network.shutdown()
 	app.config.shutdown()
+	app.user.shutdown()
 	app.logging.info('Application shutdown complete')
 }
 
@@ -222,4 +231,48 @@ pub fn (mut app App) handle_delete_file_or_directory(e &ui.Event) string {
 	app.logging.debug_source('deleteFileOrDirectory called', 'App')
 	path := e.element
 	return app.file.delete_file_or_directory_json(path)
+}
+
+// ============================================================================
+// User Management Handlers (SQLite CRUD)
+// ============================================================================
+
+// HandleGetUsers handles the getUsers event
+pub fn (mut app App) handle_get_users(e &ui.Event) string {
+	app.logging.debug_source('getUsers called', 'App')
+	return app.user.get_users_json()
+}
+
+// HandleGetUser handles the getUser event
+pub fn (mut app App) handle_get_user(e &ui.Event) string {
+	app.logging.debug_source('getUser called', 'App')
+	id := e.element.int()
+	return app.user.get_user_json(id)
+}
+
+// HandleSaveUser handles the saveUser event (create or update)
+pub fn (mut app App) handle_save_user(e &ui.Event) string {
+	app.logging.debug_source('saveUser called', 'App')
+	data := e.element
+	return app.user.save_user_json(data)
+}
+
+// HandleDeleteUser handles the deleteUser event
+pub fn (mut app App) handle_delete_user(e &ui.Event) string {
+	app.logging.debug_source('deleteUser called', 'App')
+	id := e.element.int()
+	return app.user.delete_user_json(id)
+}
+
+// HandleSearchUsers handles the searchUsers event
+pub fn (mut app App) handle_search_users(e &ui.Event) string {
+	app.logging.debug_source('searchUsers called', 'App')
+	query := e.element
+	return app.user.search_users_json(query)
+}
+
+// HandleGetUserStats handles the getUserStats event
+pub fn (mut app App) handle_get_user_stats(e &ui.Event) string {
+	app.logging.debug_source('getUserStats called', 'App')
+	return app.user.get_stats_json()
 }

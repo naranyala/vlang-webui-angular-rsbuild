@@ -146,7 +146,7 @@ build_frontend() {
         # List build artifacts
         log_step "Build artifacts:"
         ls -lh "${BUILD_OUTPUT_DIR}" 2>&1 | head -20
-        
+
         # Copy WinBox if not already present
         WINBOX_DEST="${BUILD_OUTPUT_DIR}/static/js/winbox.min.js"
         if [ ! -f "${WINBOX_DEST}" ]; then

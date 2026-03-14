@@ -6,6 +6,7 @@ A full-stack desktop application built with **V language backend** (Dependency I
 
 - [Overview](#overview)
 - [Architecture](#architecture)
+- [Features](#features)
 - [Dependency Injection Systems](#dependency-injection-systems)
   - [Backend DI (V)](#backend-di-v)
   - [Frontend DI (Angular)](#frontend-di-angular)
@@ -13,6 +14,7 @@ A full-stack desktop application built with **V language backend** (Dependency I
 - [Project Structure](#project-structure)
 - [Backend Services](#backend-services)
 - [Frontend Services](#frontend-services)
+- [Backend-Frontend Communication](#backend-frontend-communication)
 - [Commands](#commands)
 - [Development](#development)
 - [Error Handling](#error-handling)
@@ -29,8 +31,8 @@ This project provides a comprehensive desktop application framework with:
 
 - **Backend**: V language with Dependency Injection container, service registry, and "Errors as Values" pattern
 - **Frontend**: Angular 19 with 10+ reusable services following DI best practices
-- **Communication**: WebUI bridge for seamless backend-frontend interaction
-- **Features**: Real-time system monitoring, file operations, network management, authentication, and more
+- **Communication**: WebUI bridge for seamless backend-frontend interaction (4 communication approaches)
+- **Features**: Real-time system monitoring, file operations, network management, authentication, SQLite CRUD demo, and more
 
 ---
 
@@ -50,9 +52,14 @@ This project provides a comprehensive desktop application framework with:
 │  │             │  │             │  │  • DataTableService     │ │
 │  │             │  │             │  │  • CrudService          │ │
 │  │             │  │             │  │  • TimerService         │ │
+│  │             │  │             │  │  • RealtimeService      │ │
 │  └─────────────┘  └─────────────┘  └─────────────────────────┘ │
 │                              │                                  │
-│                         WebUI Bridge                            │
+│         ┌────────────────────┼────────────────────┐            │
+│         │  WebUI Binding     │   Custom Events    │            │
+│         └────────────────────┴────────────────────┘            │
+│                              │                                  │
+│                    WebUI Bridge (CivetWeb)                      │
 └──────────────────────────────┼──────────────────────────────────┘
                                │
                     ┌──────────▼──────────┐
@@ -76,6 +83,8 @@ This project provides a comprehensive desktop application framework with:
 │  │             │  │  │  • FileService                  │   │  │
 │  │             │  │  │  • NetworkService               │   │  │
 │  │             │  │  │  • ConfigService                │   │  │
+│  │             │  │  │  • DatabaseService (SQLite)     │   │  │
+│  │             │  │  │  • UserService                  │   │  │
 │  │             │  │  └─────────────────────────────────┘   │  │
 │  └─────────────┘  └─────────────────────────────────────────┘  │
 │                                                                 │
@@ -91,7 +100,34 @@ This project provides a comprehensive desktop application framework with:
 
 ---
 
-## Dependency Injection Systems
+## Features
+
+### Core Features
+
+- ✅ **Dependency Injection** - Backend (V) and Frontend (Angular) DI systems
+- ✅ **WebUI Integration** - Seamless backend-frontend communication via WebUI/CivetWeb
+- ✅ **System Monitoring** - CPU, memory, disk, network, battery stats
+- ✅ **File Operations** - Read, write, create directories, browse files
+- ✅ **Network Management** - Network interfaces, stats, IP addresses
+- ✅ **Configuration** - App configuration with defaults
+- ✅ **Error Handling** - "Errors as Values" pattern with Result types
+- ✅ **Real-time Updates** - Custom events for live data
+- ✅ **Toast Notifications** - Success, error, warning, loading states
+- ✅ **Data Tables** - Sorting, pagination, search, export
+- ✅ **CRUD Operations** - Generic CRUD service with caching
+- ✅ **Authentication** - Role-based access control
+- ✅ **Persistent Storage** - SQLite database with JSON fallback
+
+### Demo Applications
+
+| Demo | Description | Location |
+|------|-------------|----------|
+| **Login/Register** | Authentication UI with form validation | Frontend card #1 |
+| **SQLite CRUD** | Complete user management with persistent storage | Frontend card #2 |
+| **System Monitor** | Real-time system statistics | Backend services |
+| **File Browser** | Directory navigation and file operations | Backend + Frontend |
+
+---
 
 ### Backend DI (V)
 
@@ -131,6 +167,8 @@ logging := unsafe { logging_ptr as &LoggingService }
 | `FileService` | File operations | `read_file()`, `list_directory()`, `create_directory()` |
 | `NetworkService` | Network management | `get_network_interfaces()`, `get_network_stats()` |
 | `ConfigService` | Configuration | `get()`, `set()`, `get_app_config()` |
+| `DatabaseService` | SQLite/JSON persistence | `get_all_users()`, `create_user()`, `update_user()`, `delete_user()` |
+| `UserService` | User management wrapper | `get_users_json()`, `save_user_json()`, `delete_user_json()` |
 
 #### Errors as Values Pattern
 
@@ -252,6 +290,96 @@ if (this.auth.hasRole('admin') && this.auth.hasPermission('write')) {
 ```
 
 📖 **Full Documentation**: [`frontend/docs/ANGULAR_DI_SERVICES.md`](frontend/docs/ANGULAR_DI_SERVICES.md)
+
+---
+
+## Backend-Frontend Communication
+
+This application supports **4 communication approaches** between backend and frontend:
+
+### Approach 1: WebUI Function Binding (Primary)
+
+**RPC-style calls** - Backend functions bound to JavaScript-callable names.
+
+```typescript
+// Frontend: Call backend function
+const result = await this.webui.call<User[]>('getUsers');
+
+if (isOk(result)) {
+  this.users.set(result.value);
+} else {
+  this.toast.error(result.error.message);
+}
+```
+
+```v
+// Backend: Bind function
+w.bind('getUsers', fn (e &ui.Event) string {
+    users := get_all_users()
+    return json.encode(users) or { '[]' }
+})
+```
+
+**Best for**: 95% of backend-frontend calls (RPC pattern)
+
+### Approach 2: Custom Events (Supplementary)
+
+**Broadcast notifications** - Backend pushes events to frontend.
+
+```typescript
+// Frontend: Listen for events
+window.addEventListener('webui:status', (event: CustomEvent) => {
+  console.log('Status update:', event.detail);
+});
+```
+
+```v
+// Backend: Dispatch event
+ui.eval(w, 'window.dispatchEvent(new CustomEvent("webui:status", {
+    detail: { state: "connected", port: 8080 }
+}))')
+```
+
+**Best for**: Real-time notifications, status updates, broadcast messages
+
+### Approach 3: HTTP REST API (Optional)
+
+**Standard REST** - Embedded HTTP server for external integrations.
+
+```typescript
+// Frontend: HTTP calls
+this.http.get<User[]>('/api/users').subscribe(users => {
+  this.users.set(users);
+});
+```
+
+**Best for**: External integrations, file uploads, standard REST APIs
+
+### Approach 4: WebSocket Real-time (Optional)
+
+**Bidirectional streaming** - Real-time data push.
+
+```typescript
+// Frontend: Subscribe to real-time data
+this.realtime.subscribe<SystemStats>('app:update', (data) => {
+  this.stats.set(data);
+});
+```
+
+**Best for**: Live data streaming, frequent updates, chat applications
+
+### Communication Comparison
+
+| Feature | WebUI Binding | Custom Events | HTTP REST | WebSocket |
+|---------|---------------|---------------|-----------|-----------|
+| **Setup** | Low | Low | Medium | Medium |
+| **Performance** | Fast | Fast | Medium | Fast |
+| **Bidirectional** | ✅ | ❌ | ✅ | ✅ |
+| **Return Values** | ✅ | ❌ | ✅ | ✅ |
+| **Real-time** | ❌ | ✅ | ❌ | ✅ |
+| **Best For** | RPC calls | Notifications | REST API | Streaming |
+
+📖 **Full Documentation**: [`docs/40-backend-frontend-communication.md`](docs/40-backend-frontend-communication.md)
 
 ---
 
@@ -426,6 +554,74 @@ max_retries := config.get_int('app.max_retries')
 
 // Get app config
 app_config := config.get_app_config()
+```
+
+### DatabaseService (SQLite/JSON Persistence)
+
+```v
+mut db := DatabaseService{}
+db.initialize()
+
+// Get all users
+users := db.get_all_users()
+
+// Get user by ID
+user := db.get_user_by_id(1) or {
+    println('User not found')
+    return
+}
+
+// Create user
+new_user := User{
+    name: 'John Doe'
+    email: 'john@example.com'
+    role: 'user'
+    status: 'active'
+}
+created := db.create_user(new_user) or {
+    println('Failed: ${err}')
+}
+
+// Update user
+user.email = 'new@example.com'
+updated := db.update_user(user.id, user) or {
+    println('Failed: ${err}')
+}
+
+// Delete user
+db.delete_user(user.id) or {
+    println('Failed: ${err}')
+}
+
+// Search users
+results := db.search_users('john')
+
+// Get statistics
+stats := db.get_stats()
+println('Total: ${stats['total']}, Active: ${stats['active']}')
+```
+
+### UserService
+
+```v
+mut user_service := UserService{}
+user_service.initialize()
+
+// Get users as JSON (for WebUI)
+json_data := user_service.get_users_json()
+
+// Save user (create or update)
+user_json := '{"name":"Jane","email":"jane@example.com"}'
+result := user_service.save_user_json(user_json)
+
+// Delete user
+result := user_service.delete_user_json(1)
+
+// Search users
+results := user_service.search_users_json('jane')
+
+// Get statistics
+stats := user_service.get_stats_json()
 ```
 
 ---
@@ -726,8 +922,9 @@ All documentation is unified in the `docs/` directory:
 | **Testing** | [13-bun-testing-guide.md](docs/13-bun-testing-guide.md), [15-testing-guide.md](docs/15-testing-guide.md) |
 | **Migration** | [20-rsbuild-migration-guide.md](docs/20-rsbuild-migration-guide.md), [21-frontend-error-handling.md](docs/21-frontend-error-handling.md) |
 | **Advanced** | [30-bleeding-edge-angular.md](docs/30-bleeding-edge-angular.md), [31-bleeding-edge-migration.md](docs/31-bleeding-edge-migration.md) |
+| **Communication** | [40-backend-frontend-communication.md](docs/40-backend-frontend-communication.md) - **NEW** |
 
-📖 **Start Here**: [Documentation Index](docs/00-index.md) - Complete documentation catalog
+📖 **Start Here**: [Documentation Index](docs/00-index.md) - Complete documentation catalog (17 documents)
 
 ---
 

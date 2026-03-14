@@ -14,5 +14,4 @@ export * from './loading.service';
 export * from './data-table.service';
 export * from './crud.service';
 
-// Authentication services
-export * from './auth.service';
+// Note: Authentication services removed - backend not implemented

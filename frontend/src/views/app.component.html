@@ -41,41 +41,15 @@
 
   <!-- MAIN CONTENT -->
   <main class="main-content">
-    <div class="search-section">
-      <div class="search-container">
-        <span class="search-icon">🔍</span>
-        <input type="text"
-               class="search-input"
-               placeholder="Search technologies..."
-               [value]="searchQuery()"
-               (input)="onSearch($event)" />
-        @if (searchQuery()) {
-          <button type="button" class="clear-btn" (click)="clearSearch()" title="Clear search">✕</button>
-        }
+    <div class="welcome-section">
+      <div class="welcome-message">
+        <h1 class="welcome-title">Welcome to TechHub</h1>
+        <p class="welcome-subtitle">Click the button below to access your account</p>
+        <button class="btn-open-auth" (click)="openLoginWindow()">
+          <span class="btn-icon">🔐</span>
+          Open Login / Register
+        </button>
       </div>
-    </div>
-
-    <div class="cards-grid">
-      @for (card of filteredCards(); track card.id) {
-        <article class="card"
-                 [style.border-left-color]="card.color"
-                 (click)="openCard(card)"
-                 [attr.data-card-id]="card.id"
-                 tabindex="0"
-                 (keydown.enter)="openCard(card)"
-                 (keydown.space)="openCard(card)">
-          <div class="card__icon" [style.background]="card.color">
-            {{ card.icon }}
-          </div>
-          <h3 class="card__title">{{ card.title }}</h3>
-          <p class="card__description">{{ card.description }}</p>
-          <span class="card__hint">Click to learn more</span>
-        </article>
-      } @empty {
-        <div class="no-results">
-          <p class="no-results__text">No matching cards for "{{ searchQuery() }}"</p>
-        </div>
-      }
     </div>
   </main>
 

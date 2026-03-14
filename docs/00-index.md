@@ -1,8 +1,8 @@
 # Documentation Index
 
-> **Project**: Vlang WebUI Angular Application  
-> **Last Updated**: 2026-03-14  
-> **Total Documents**: 16
+> **Project**: Vlang WebUI Angular Application
+> **Last Updated**: 2026-03-14
+> **Total Documents**: 17
 
 Welcome to the comprehensive documentation for the Vlang WebUI Angular application. This documentation covers both the V backend with Dependency Injection and the Angular 19 frontend with reusable services.
 
@@ -48,6 +48,13 @@ Experimental and cutting-edge features.
 |---|----------|-------------|-------|
 | [30](30-bleeding-edge-angular.md) | Bleeding Edge Angular | Latest Angular features and practices | Angular |
 | [31](31-bleeding-edge-migration.md) | Bleeding Edge Migration | Migration to latest Angular version | Angular |
+
+### Communication & Integration (40-49)
+Backend-frontend communication patterns and protocols.
+
+| # | Document | Description | Stack |
+|---|----------|-------------|-------|
+| [40](40-backend-frontend-communication.md) | Backend-Frontend Communication | Complete guide to communication approaches, protocols, and data formats | Both |
 
 ---
 

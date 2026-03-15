@@ -1,6 +1,5 @@
 import { ErrorHandler, Injector, inject } from '@angular/core';
-import { ErrorCode, ErrorValue } from '../types/error.types';
-import { GlobalErrorService } from './global-error.service';
+import { ErrorService } from '../services/core/error.service';
 
 export class GlobalErrorHandler implements ErrorHandler {
   private readonly injector = inject(Injector);
@@ -9,96 +8,38 @@ export class GlobalErrorHandler implements ErrorHandler {
     // Log to console immediately for debugging
     this.logToConsole('ERROR', error);
 
-    const errorService = this.injector.get(GlobalErrorService);
+    const errorService = this.injector.get(ErrorService);
 
-    // Convert unknown error to ErrorValue with rich context
-    const errorValue: ErrorValue = this.extractErrorValue(error);
+    // Convert unknown error to error report
+    const errorData = this.extractErrorData(error);
 
-    errorService.report(errorValue, {
-      source: 'angular',
-      title: this.extractTitle(error),
+    errorService.report({
+      message: errorData.message,
+      details: errorData.details,
+      severity: 'error',
+      context: errorData.context,
     });
   }
 
   /**
-   * Log error to console with full details
+   * Extract structured error data from any error type
    */
-  private logToConsole(level: string, error: unknown): void {
-    const timestamp = new Date().toISOString();
-    const prefix = `%c[${timestamp}] [${level}]`;
-
+  private extractErrorData(error: unknown): { message: string; details?: string; context?: Record<string, string> } {
     if (error instanceof Error) {
-      console.error(
-        prefix,
-        'color: #ff4444; font-weight: bold;',
-        `\n┌──────────────────────────────────────────────────────────────┐
-│ Angular Error Handler                                             │
-├──────────────────────────────────────────────────────────────┤
-│ Type: ${error.name}
-│ Message: ${error.message}
-│ Stack: ${error.stack?.split('\n').slice(0, 5).join('\n│ ') || 'N/A'}
-└──────────────────────────────────────────────────────────────┘`
-      );
-    } else if (typeof error === 'string') {
-      console.error(prefix, 'color: #ff4444; font-weight: bold;', `\n${error}`);
-    } else {
-      console.error(prefix, 'color: #ff4444; font-weight: bold;', '\nUnknown error:', error);
-    }
-  }
-
-  /**
-   * Extract structured error value from any error type
-   */
-  private extractErrorValue(error: unknown): ErrorValue {
-    if (error instanceof Error) {
-      // Check for specific error types
-      if (error.name === 'HttpErrorResponse') {
-        const httpError = error as any;
-        return {
-          code: this.mapHttpCodeToErrorCode(httpError.status),
-          message: httpError.message || 'Network request failed',
-          details: httpError.error?.details || httpError.stack,
-          context: {
-            status: String(httpError.status),
-            url: httpError.url || 'unknown',
-          },
-        };
-      }
-
       return {
-        code: ErrorCode.InternalError,
         message: error.message,
         details: error.stack,
       };
     }
 
     if (typeof error === 'string') {
-      return {
-        code: this.inferErrorCode(error),
-        message: error,
-      };
+      return { message: error };
     }
 
     if (error && typeof error === 'object') {
       const obj = error as Record<string, unknown>;
-
-      // Check if it's an API error response
-      if (obj.error && typeof obj.error === 'object') {
-        const errorObj = obj.error as Record<string, unknown>;
-        return {
-          code: (errorObj.code as ErrorCode) || ErrorCode.Unknown,
-          message: (errorObj.message as string) || 'An error occurred',
-          details: errorObj.details as string,
-          field: errorObj.field as string,
-          cause: errorObj.cause as string,
-          context: errorObj.context as Record<string, string>,
-        };
-      }
-
-      // Check if it has message property
       if (typeof obj.message === 'string') {
         return {
-          code: this.inferErrorCode(obj.message),
           message: obj.message,
           details: (obj.stack as string) || JSON.stringify(error, null, 2),
         };
@@ -106,80 +47,24 @@ export class GlobalErrorHandler implements ErrorHandler {
     }
 
     return {
-      code: ErrorCode.Unknown,
       message: 'An unknown error occurred',
       details: typeof error === 'object' ? JSON.stringify(error) : String(error),
     };
   }
 
   /**
-   * Infer error code from message content
+   * Log error to console with full details
    */
-  private inferErrorCode(message: string): ErrorCode {
-    const lowerMsg = message.toLowerCase();
+  private logToConsole(level: string, error: unknown): void {
+    const timestamp = new Date().toISOString();
+    const prefix = `[${timestamp}] [${level}]`;
 
-    if (lowerMsg.includes('network') || lowerMsg.includes('fetch') || lowerMsg.includes('http')) {
-      return ErrorCode.DbConnectionFailed;
-    }
-    if (lowerMsg.includes('not found') || lowerMsg.includes('404')) {
-      return ErrorCode.ResourceNotFound;
-    }
-    if (lowerMsg.includes('validation') || lowerMsg.includes('invalid')) {
-      return ErrorCode.ValidationFailed;
-    }
-    if (lowerMsg.includes('duplicate') || lowerMsg.includes('already exists')) {
-      return ErrorCode.DbAlreadyExists;
-    }
-    if (
-      lowerMsg.includes('permission') ||
-      lowerMsg.includes('unauthorized') ||
-      lowerMsg.includes('forbidden')
-    ) {
-      return ErrorCode.InternalError;
-    }
-    if (lowerMsg.includes('timeout')) {
-      return ErrorCode.InternalError;
-    }
-
-    return ErrorCode.Unknown;
-  }
-
-  /**
-   * Map HTTP status code to error code
-   */
-  private mapHttpCodeToErrorCode(status: number): ErrorCode {
-    switch (status) {
-      case 400:
-        return ErrorCode.ValidationFailed;
-      case 401:
-      case 403:
-        return ErrorCode.InternalError;
-      case 404:
-        return ErrorCode.ResourceNotFound;
-      case 409:
-        return ErrorCode.DbAlreadyExists;
-      case 500:
-      case 502:
-      case 503:
-        return ErrorCode.InternalError;
-      default:
-        return ErrorCode.Unknown;
-    }
-  }
-
-  /**
-   * Extract a user-friendly title from error
-   */
-  private extractTitle(error: unknown): string {
     if (error instanceof Error) {
-      if (error.name === 'HttpErrorResponse') {
-        const httpError = error as any;
-        const status = httpError.status;
-        if (status >= 500) return 'Server Error';
-        if (status >= 400) return 'Request Failed';
-      }
-      return 'Error';
+      console.error(prefix, error.message, error.stack);
+    } else if (typeof error === 'string') {
+      console.error(prefix, error);
+    } else {
+      console.error(prefix, 'Unknown error:', error);
     }
-    return 'Error';
   }
 }

@@ -2,6 +2,7 @@ module main
 
 import vwebui as ui
 import time
+import services
 
 // ============================================================================
 // Application Service - Simplified without DI container
@@ -11,12 +12,12 @@ import time
 @[heap]
 pub struct App {
 mut:
-	logging          LoggingService
-	system_info      SystemInfoService
-	file             FileService
-	network          NetworkService
-	config           ConfigService
-	user             UserService
+	logging          services.LoggingService
+	system_info      services.SystemInfoService
+	file             services.FileService
+	network          services.NetworkService
+	config           services.ConfigService
+	user             services.UserService
 
 	app_name         string
 	app_version      string
@@ -26,24 +27,24 @@ mut:
 
 // NewApp creates a new application instance
 pub fn new_app(app_name string, app_version string) App {
-	mut logging := LoggingService{}
+	mut logging := services.LoggingService{}
 	logging.initialize()
 	logging.set_min_level('debug')
 
-	mut system_info := SystemInfoService{}
+	mut system_info := services.SystemInfoService{}
 	system_info.initialize()
 
-	mut file := FileService{}
+	mut file := services.FileService{}
 	file.initialize()
 	file.set_deny_write(true)
 
-	mut network := NetworkService{}
+	mut network := services.NetworkService{}
 	network.initialize()
 
-	mut config := ConfigService{}
+	mut config := services.ConfigService{}
 	config.initialize()
 
-	mut user := UserService{}
+	mut user := services.UserService{}
 	user.initialize() or {
 		logging.error('Failed to initialize user service: ${err}')
 	}

@@ -1,0 +1,122 @@
+<div class="app-container">
+  <!-- TOP PANEL -->
+  <header class="top-panel">
+    <div class="top-bar">
+      <div class="top-bar__left">
+        <span class="top-bar__brand">
+          <span class="top-bar__name">TechHub</span>
+        </span>
+      </div>
+      <div class="top-bar__right">
+        <button class="top-bar__close-all" (click)="closeAllWindows()" title="Close all windows">
+          ✕ All
+        </button>
+      </div>
+    </div>
+
+    <div class="top-panel__content">
+      <nav class="top-nav">
+        <button class="top-nav__item"
+                [class.active]="!hasFocusedWindow()"
+                (click)="showMainMenu()"
+                title="Show all windows">
+          <span class="top-nav__label">Home</span>
+        </button>
+
+        @for (windowEntry of windowEntries(); track windowEntry.id) {
+          <button class="top-nav__item"
+                  [class.active]="windowEntry.focused"
+                  (click)="activateWindow(windowEntry.id)"
+                  [title]="windowEntry.title">
+            <span class="top-nav__label">{{ windowEntry.title }}</span>
+          </button>
+        }
+      </nav>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+    <div class="welcome-section">
+      <div class="welcome-message">
+        <h1 class="welcome-title">Welcome to TechHub</h1>
+        <p class="welcome-subtitle">Click a card below to open a window</p>
+
+        <!-- Search Bar -->
+        <div class="search-section">
+          <div class="search-container">
+            <span class="search-icon">🔍</span>
+            <input
+              type="text"
+              class="search-input"
+              placeholder="Search cards..."
+              [value]="searchQuery()"
+              (input)="onSearch($event)"
+              aria-label="Search cards"
+            />
+            @if (hasActiveSearch()) {
+              <button
+                type="button"
+                class="clear-btn"
+                (click)="clearSearch()"
+                title="Clear search"
+                aria-label="Clear search"
+              >
+                ✕
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- Cards Grid -->
+        <div class="cards-grid">
+          @for (card of filteredCards(); track card.id) {
+            <article class="card"
+                     [style.border-left-color]="card.color"
+                     (click)="openCard(card)"
+                     tabindex="0"
+                     (keydown.enter)="openCard(card)">
+              <div class="card__icon" [style.background]="card.color">
+                {{ card.icon }}
+              </div>
+              <h3 class="card__title">{{ card.title }}</h3>
+              <p class="card__description">{{ card.description }}</p>
+            </article>
+          } @empty {
+            @if (noResults()) {
+              <div class="no-results">
+                <span class="no-results__icon">😕</span>
+                <p class="no-results__text">No cards found for "{{ searchQuery() }}"</p>
+                <button class="btn-reset" (click)="clearSearch()">Clear Search</button>
+              </div>
+            }
+          }
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- BOTTOM PANEL -->
+  <footer class="bottom-panel">
+    <div class="status-bar">
+      <div class="status-bar__left">
+        <div class="status-indicator"
+             [class.connected]="connectionState().connected"
+             [class.disconnected]="!connectionState().connected">
+        </div>
+        <span class="status-bar__text">
+          {{ connectionState().connected ? 'Connected' : 'Disconnected' }}
+          @if (connectionState().port) {
+            <span class="status-bar__detail">• Port: {{ connectionState().port }}</span>
+          }
+        </span>
+      </div>
+      <button class="status-bar__toggle"
+              type="button"
+              (click)="toggleBottom()"
+              title="Toggle details">
+        {{ bottomCollapsed() ? '⌄' : '⌃' }}
+      </button>
+    </div>
+  </footer>
+</div>

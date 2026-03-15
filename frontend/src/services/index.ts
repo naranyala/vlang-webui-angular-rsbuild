@@ -1,17 +1,7 @@
-// Core utility services
-export * from './storage.service';
-export * from './cache.service';
-export * from './timer.service';
+// Core services
+export { ErrorService, type AppError, type ErrorSeverity } from './core/error.service';
+export { LoggerService, Logger, type LogLevel } from './core/logger.service';
 
-// Communication services
-export * from './webui.service';
-
-// UI/UX services
-export * from './toast.service';
-export * from './loading.service';
-
-// Data management services
-export * from './data-table.service';
-export * from './crud.service';
-
-// Note: Authentication services removed - backend not implemented
+// App services
+export { WebUIService, type WebUICallOptions } from './app/webui.service';
+export { UserService, type User } from './app/user.service';

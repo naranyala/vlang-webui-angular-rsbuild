@@ -10,7 +10,7 @@ import 'zone.js';
 import './winbox-loader';
 
 import { bootstrapApplication } from '@angular/platform-browser';
-import { AppComponent } from './views/app.component';
+import { AppComponent } from './app/app.component';
 import { provideZoneChangeDetection } from '@angular/core';
 import { ErrorHandler } from '@angular/core';
 import { GlobalErrorHandler } from './core/global-error.handler';

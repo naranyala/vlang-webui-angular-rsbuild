@@ -9,7 +9,7 @@ import os
 
 const app_name = 'Desktop App'
 const app_version = '1.0.0'
-const max_retries = 3
+const max_retries = 3                   // Number of retry attempts for window creation
 
 // ============================================================================
 // Main Entry Point

@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { getLogger } from '../viewmodels/logger';
+import { LoggerService } from '../services/core/logger.service';
 
 export interface WinBoxOptions {
   id?: string;
@@ -91,10 +91,11 @@ export interface WinBoxInstance {
   providedIn: 'root',
 })
 export class WinBoxService {
-  private readonly logger = getLogger('winbox.service');
+  private readonly logger: ReturnType<LoggerService['getLogger']>;
   private winboxConstructor: any = null;
 
-  constructor() {
+  constructor(loggerService: LoggerService) {
+    this.logger = loggerService.getLogger('WinBoxService');
     // WinBox should be loaded from static/js/winbox.min.js via script tag
     // Check if it's available on window
     if (typeof window !== 'undefined' && (window as any).WinBox) {

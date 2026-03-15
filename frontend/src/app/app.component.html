@@ -45,7 +45,7 @@
         <!-- Search Bar -->
         <div class="search-section">
           <div class="search-container">
-            <span class="search-icon">🔍</span>
+            <span class="search-icon" aria-hidden="true">🔍</span>
             <input
               type="text"
               class="search-input"
@@ -53,7 +53,11 @@
               [value]="searchQuery()"
               (input)="onSearch($event)"
               aria-label="Search cards"
+              aria-describedby="search-help"
             />
+            <span id="search-help" class="visually-hidden">
+              Type to search cards by title, description, or icon
+            </span>
             @if (hasActiveSearch()) {
               <button
                 type="button"
@@ -62,20 +66,23 @@
                 title="Clear search"
                 aria-label="Clear search"
               >
-                ✕
+                <span aria-hidden="true">✕</span>
               </button>
             }
           </div>
         </div>
 
         <!-- Cards Grid -->
-        <div class="cards-grid">
+        <div class="cards-grid" role="list" aria-label="Technology cards">
           @for (card of filteredCards(); track card.id) {
-            <article class="card"
-                     [style.border-left-color]="card.color"
-                     (click)="openCard(card)"
-                     tabindex="0"
-                     (keydown.enter)="openCard(card)">
+            <article
+              class="card"
+              role="listitem"
+              [style.border-left-color]="card.color"
+              (click)="openCard(card)"
+              tabindex="0"
+              (keydown.enter)="openCard(card)"
+              [attr.aria-label]="'Open ' + card.title + ' card'">
               <div class="card__icon" [style.background]="card.color">
                 {{ card.icon }}
               </div>
@@ -84,8 +91,8 @@
             </article>
           } @empty {
             @if (noResults()) {
-              <div class="no-results">
-                <span class="no-results__icon">😕</span>
+              <div class="no-results" role="status" aria-live="polite">
+                <span class="no-results__icon" aria-hidden="true">😕</span>
                 <p class="no-results__text">No cards found for "{{ searchQuery() }}"</p>
                 <button class="btn-reset" (click)="clearSearch()">Clear Search</button>
               </div>

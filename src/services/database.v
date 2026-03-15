@@ -4,10 +4,12 @@ import time
 import os
 import json
 import models
+import config
 
 
 // ============================================================================
 // Database Service (File-based JSON storage for persistence)
+// Uses configuration from config module
 // ============================================================================
 
 @[heap]
@@ -18,13 +20,13 @@ mut:
 	users         []models.User
 }
 
-// Initialize initializes the database connection
-pub fn (mut db_service DatabaseService) initialize() ! {
+// Initialize initializes the database connection with configuration
+pub fn (mut db_service DatabaseService) initialize(cfg config.AppConfig) ! {
 	if db_service.initialized {
 		return
 	}
 
-	db_service.db_path = 'users.db.json'
+	db_service.db_path = cfg.db_file
 	println('Initializing database: ${db_service.db_path}')
 
 	// Load users from file

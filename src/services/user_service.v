@@ -2,9 +2,11 @@ module services
 
 import json
 import models
+import config
 
 // ============================================================================
 // User Service - Wrapper for DatabaseService with JSON serialization
+// Uses centralized configuration
 // ============================================================================
 
 @[heap]
@@ -14,13 +16,13 @@ mut:
 	initialized   bool
 }
 
-// Initialize initializes the user service
-pub fn (mut user_service UserService) initialize() ! {
+// Initialize initializes the user service with configuration
+pub fn (mut user_service UserService) initialize(cfg config.AppConfig) ! {
 	if user_service.initialized {
 		return
 	}
 
-	user_service.db.initialize() or {
+	user_service.db.initialize(cfg) or {
 		return error('Failed to initialize database: ${err}')
 	}
 

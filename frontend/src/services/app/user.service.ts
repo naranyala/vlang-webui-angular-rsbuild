@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { WebUIService } from './webui.service';
+import { validateUserInput, formatValidationErrors } from '../../utils/validation';
 
 /**
  * User interface
@@ -15,7 +16,7 @@ export interface User {
 }
 
 /**
- * User service - Concrete implementation for user management
+ * User service - Concrete implementation for user management with validation
  * Replaces: Unused generic CrudService<T>
  */
 @Injectable({ providedIn: 'root' })
@@ -37,9 +38,15 @@ export class UserService {
   }
 
   /**
-   * Create or update user
+   * Create or update user with validation
    */
   async save(user: Partial<User>): Promise<User> {
+    // Validate input before sending to backend
+    const validation = validateUserInput(user);
+    if (!validation.isValid) {
+      throw new Error(`Validation failed: ${formatValidationErrors(validation.errors)}`);
+    }
+
     return this.webui.call<User>('saveUser', [JSON.stringify(user)]);
   }
 

@@ -3,9 +3,11 @@ module main
 import vwebui as ui
 import time
 import services
+import config
 
 // ============================================================================
 // Application Service - Simplified without DI container
+// Uses centralized configuration
 // ============================================================================
 
 // App represents the main application
@@ -18,6 +20,8 @@ mut:
 	network          services.NetworkService
 	config           services.ConfigService
 	user             services.UserService
+	devtools         services.DevToolsService
+	app_config       config.AppConfig
 
 	app_name         string
 	app_version      string
@@ -25,8 +29,14 @@ mut:
 	window_opened    bool
 }
 
-// NewApp creates a new application instance
+// NewApp creates a new application instance with centralized configuration
 pub fn new_app(app_name string, app_version string) App {
+	// Initialize configuration first
+	mut app_config := config.init_config()
+	app_config.ensure_directories() or {
+		println('Warning: Failed to create directories: ${err}')
+	}
+
 	mut logging := services.LoggingService{}
 	logging.initialize()
 	logging.set_min_level('debug')
@@ -41,21 +51,26 @@ pub fn new_app(app_name string, app_version string) App {
 	mut network := services.NetworkService{}
 	network.initialize()
 
-	mut config := services.ConfigService{}
-	config.initialize()
+	mut config_svc := services.ConfigService{}
+	config_svc.initialize()
 
 	mut user := services.UserService{}
-	user.initialize() or {
+	user.initialize(app_config) or {
 		logging.error('Failed to initialize user service: ${err}')
 	}
+
+	mut devtools := services.DevToolsService{}
+	devtools.initialize()
 
 	return App{
 		logging:      logging
 		system_info:  system_info
 		file:         file
 		network:      network
-		config:       config
+		config:       config_svc
 		user:         user
+		devtools:     devtools
+		app_config:   app_config
 		app_name:     app_name
 		app_version:  app_version
 	}
@@ -276,4 +291,83 @@ pub fn (mut app App) handle_search_users(e &ui.Event) string {
 pub fn (mut app App) handle_get_user_stats(e &ui.Event) string {
 	app.logging.debug_source('getUserStats called', 'App')
 	return app.user.get_stats_json()
+}
+
+// ============================================================================
+// DevTools Handlers
+// ============================================================================
+
+// HandleGetDevToolsSystemInfo handles the getDevToolsSystemInfo event
+pub fn (mut app App) handle_get_devtools_system_info(e &ui.Event) string {
+	app.logging.debug_source('getDevToolsSystemInfo called', 'App')
+	return app.devtools.get_system_info_json()
+}
+
+// HandleGetDevToolsMemoryInfo handles the getDevToolsMemoryInfo event
+pub fn (mut app App) handle_get_devtools_memory_info(e &ui.Event) string {
+	app.logging.debug_source('getDevToolsMemoryInfo called', 'App')
+	return app.devtools.get_memory_info_json()
+}
+
+// HandleGetDevToolsProcessInfo handles the getDevToolsProcessInfo event
+pub fn (mut app App) handle_get_devtools_process_info(e &ui.Event) string {
+	app.logging.debug_source('getDevToolsProcessInfo called', 'App')
+	return app.devtools.get_process_info_json()
+}
+
+// HandleGetDevToolsNetworkInfo handles the getDevToolsNetworkInfo event
+pub fn (mut app App) handle_get_devtools_network_info(e &ui.Event) string {
+	app.logging.debug_source('getDevToolsNetworkInfo called', 'App')
+	return app.devtools.get_network_info_json()
+}
+
+// HandleGetDevToolsDatabaseInfo handles the getDevToolsDatabaseInfo event
+pub fn (mut app App) handle_get_devtools_database_info(e &ui.Event) string {
+	app.logging.debug_source('getDevToolsDatabaseInfo called', 'App')
+	db_path := 'users.db.json'
+	return app.devtools.get_database_info_json(db_path)
+}
+
+// HandleGetDevToolsConfigInfo handles the getDevToolsConfigInfo event
+pub fn (mut app App) handle_get_devtools_config_info(e &ui.Event) string {
+	app.logging.debug_source('getDevToolsConfigInfo called', 'App')
+	return app.devtools.get_config_info_json()
+}
+
+// HandleGetDevToolsPerformanceMetrics handles the getDevToolsPerformanceMetrics event
+pub fn (mut app App) handle_get_devtools_performance_metrics(e &ui.Event) string {
+	app.logging.debug_source('getDevToolsPerformanceMetrics called', 'App')
+	return app.devtools.get_performance_metrics_json()
+}
+
+// HandleGetDevToolsEvents handles the getDevToolsEvents event
+pub fn (mut app App) handle_get_devtools_events(e &ui.Event) string {
+	app.logging.debug_source('getDevToolsEvents called', 'App')
+	return app.devtools.get_events_json()
+}
+
+// HandleGetDevToolsBindings handles the getDevToolsBindings event
+pub fn (mut app App) handle_get_devtools_bindings(e &ui.Event) string {
+	app.logging.debug_source('getDevToolsBindings called', 'App')
+	return app.devtools.get_bindings_json()
+}
+
+// HandleGetDevToolsLogs handles the getDevToolsLogs event
+pub fn (mut app App) handle_get_devtools_logs(e &ui.Event) string {
+	app.logging.debug_source('getDevToolsLogs called', 'App')
+	return app.devtools.get_logs_json()
+}
+
+// HandleClearDevToolsEvents handles the clearDevToolsEvents event
+pub fn (mut app App) handle_clear_devtools_events(e &ui.Event) string {
+	app.logging.debug_source('clearDevToolsEvents called', 'App')
+	app.devtools.clear_events()
+	return '{"success": true}'
+}
+
+// HandleClearDevToolsLogs handles the clearDevToolsLogs event
+pub fn (mut app App) handle_clear_devtools_logs(e &ui.Event) string {
+	app.logging.debug_source('clearDevToolsLogs called', 'App')
+	app.devtools.clear_logs()
+	return '{"success": true}'
 }

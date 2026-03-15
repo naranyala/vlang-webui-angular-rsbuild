@@ -10,6 +10,9 @@ import os
 const app_name = 'Desktop App'
 const app_version = '1.0.0'
 const max_retries = 3                   // Number of retry attempts for window creation
+const window_width_percent = 80         // Default window width as percentage of screen
+const window_height_percent = 80        // Default window height as percentage of screen
+const root_folder_check_min_files = 2   // Minimum expected files in build output
 
 // ============================================================================
 // Main Entry Point
@@ -85,6 +88,20 @@ fn main() {
 	w.bind('deleteUser', app.handle_delete_user)
 	w.bind('searchUsers', app.handle_search_users)
 	w.bind('getUserStats', app.handle_get_user_stats)
+
+	// DevTools handlers
+	w.bind('getDevToolsSystemInfo', app.handle_get_devtools_system_info)
+	w.bind('getDevToolsMemoryInfo', app.handle_get_devtools_memory_info)
+	w.bind('getDevToolsProcessInfo', app.handle_get_devtools_process_info)
+	w.bind('getDevToolsNetworkInfo', app.handle_get_devtools_network_info)
+	w.bind('getDevToolsDatabaseInfo', app.handle_get_devtools_database_info)
+	w.bind('getDevToolsConfigInfo', app.handle_get_devtools_config_info)
+	w.bind('getDevToolsPerformanceMetrics', app.handle_get_devtools_performance_metrics)
+	w.bind('getDevToolsEvents', app.handle_get_devtools_events)
+	w.bind('getDevToolsBindings', app.handle_get_devtools_bindings)
+	w.bind('getDevToolsLogs', app.handle_get_devtools_logs)
+	w.bind('clearDevToolsEvents', app.handle_clear_devtools_events)
+	w.bind('clearDevToolsLogs', app.handle_clear_devtools_logs)
 
 	app.logging.success('All handlers bound successfully')
 

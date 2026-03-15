@@ -1,8 +1,20 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, inject, OnInit, signal, input, output, model, effect } from '@angular/core';
+import { Component, computed, inject, OnInit, signal, input, output, effect } from '@angular/core';
 import { WinBoxService } from '../core/winbox.service';
 import { Card, TECH_CARDS, WindowEntry } from '../models';
 import { ErrorService, LoggerService, WebUIService } from '../services';
+
+// Type-safe WinBox instance interface
+interface WinBoxInstance {
+  __windowId?: string;
+  __cardTitle?: string;
+  __cardId?: number;
+  min: boolean;
+  focus(): void;
+  restore(): void;
+  close(force?: boolean): boolean;
+  minimize(value: boolean): void;
+}
 
 @Component({
   selector: 'app-root',
@@ -24,7 +36,6 @@ export class AppComponent implements OnInit {
   // Signal-based inputs (Angular 19+)
   initialCollapsed = input<boolean>(true);
   appName = input<string>('TechHub');
-  debugMode = model<boolean>(false);
 
   // Signal-based outputs (Angular 19+)
   windowClosed = output<string>();
@@ -66,24 +77,16 @@ export class AppComponent implements OnInit {
     windows: this.windowCount(),
     connected: this.connectionState().connected,
     port: this.connectionState().port,
-    debug: this.debugMode(),
     minimized: this.minimizedCount(),
     timestamp: new Date().toISOString(),
   }));
 
-  // Private state
-  private existingBoxes: any[] = [];
+  // Type-safe WinBox tracking
+  private existingBoxes: WinBoxInstance[] = [];
 
-  // Effect for side effects (Angular 16+)
   constructor(
     private readonly loggerService: LoggerService
   ) {
-    // Log when debug mode changes
-    effect(() => {
-      const debug = this.debugMode();
-      this.logger.info('Debug mode changed', { debug });
-    });
-
     // Log connection state changes
     effect(() => {
       const state = this.connectionState();
@@ -98,11 +101,10 @@ export class AppComponent implements OnInit {
   // ============================================================================
 
   ngOnInit(): void {
-    this.logger.info('Application initialized', { 
-      appName: this.appName(),
-      debug: this.debugMode() 
+    this.logger.info('Application initialized', {
+      appName: this.appName()
     });
-    
+
     this.closeAllWindows();
 
     // Auto-open first card after a short delay

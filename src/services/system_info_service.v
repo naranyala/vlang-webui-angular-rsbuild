@@ -34,7 +34,7 @@ pub fn (s SystemInfoService) name() string {
 // ============================================================================
 
 pub fn (mut s SystemInfoService) get_system_info_json() string {
-	hostname := os.hostname() or { 'unknown' }
+	mut hostname := os.hostname() or { 'unknown' }
 	os_name := os.user_os()
 	
 	// Get memory info for status
@@ -406,4 +406,13 @@ pub fn (mut s SystemInfoService) get_sensor_temperatures_json() string {
 	}
 
 	return '{"temperatures":[${temperatures.join(',')}],"status":"ok"}'
+}
+
+// Get hostname info
+pub fn (mut s SystemInfoService) get_hostname_info_json() string {
+	mut hostname := os.hostname() or { 'unknown' }
+	if hostname.len == 0 {
+		hostname = 'unknown'
+	}
+	return '{"hostname":"${hostname}"}'
 }

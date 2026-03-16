@@ -1,0 +1,428 @@
+module services
+
+import di
+import time
+import json
+
+// ============================================================================
+// Example: Logging Service with DI
+// ============================================================================
+
+@[heap]
+pub struct LoggingService {
+mut:
+	min_level       string
+	entries         []LogEntry
+	max_entries     int
+	initialized     bool
+}
+
+pub struct LogEntry {
+pub mut:
+	level      string
+	timestamp  string
+	message    string
+	context    map[string]string
+}
+
+// Factory function for DI
+pub fn create_logging_service() &LoggingService {
+	mut service := &LoggingService{
+		min_level: 'info'
+		entries: []LogEntry{}
+		max_entries: 1000
+		initialized: false
+	}
+	return service
+}
+
+// Initialize service (called by DI container)
+pub fn (mut service LoggingService) initialize() {
+	if service.initialized {
+		return
+	}
+	
+	service.initialized = true
+	service.info('LoggingService initialized')
+}
+
+// Log methods
+pub fn (mut service LoggingService) info(message string) {
+	service.log('info', message, map[string]string{})
+}
+
+pub fn (mut service LoggingService) debug(message string) {
+	service.log('debug', message, map[string]string{})
+}
+
+pub fn (mut service LoggingService) warning(message string) {
+	service.log('warning', message, map[string]string{})
+}
+
+pub fn (mut service LoggingService) error(message string) {
+	service.log('error', message, map[string]string{})
+}
+
+pub fn (mut service LoggingService) log(level string, message string, context map[string]string) {
+	if !service.should_log(level) {
+		return
+	}
+	
+	entry := LogEntry{
+		level: level
+		timestamp: time.now().custom_format('YYYY-MM-DD HH:mm:ss.SSS')
+		message: message
+		context: context.clone()
+	}
+	
+	service.entries << entry
+	
+	// Trim if too many
+	if service.entries.len > service.max_entries {
+		service.entries = service.entries[service.entries.len - service.max_entries..]
+	}
+	
+	// Also print to console
+	println('[${entry.timestamp}] [${level}] ${message}')
+}
+
+fn (service LoggingService) should_log(level string) bool {
+	levels := ['debug', 'info', 'warning', 'error']
+	
+	mut min_index := 0
+	for i, l in levels {
+		if l == service.min_level {
+			min_index = i
+			break
+		}
+	}
+	
+	mut current_index := 0
+	for i, l in levels {
+		if l == level {
+			current_index = i
+			break
+		}
+	}
+	
+	return current_index >= min_index
+}
+
+pub fn (mut service LoggingService) set_min_level(level string) {
+	service.min_level = level
+}
+
+pub fn (service LoggingService) get_entries() []LogEntry {
+	return service.entries
+}
+
+pub fn (mut service LoggingService) clear() {
+	service.entries.clear()
+}
+
+// ============================================================================
+// Example: Config Service with DI
+// ============================================================================
+
+@[heap]
+pub struct ConfigService {
+mut:
+	config      map[string]string
+	initialized bool
+}
+
+pub fn create_config_service() &ConfigService {
+	return &ConfigService{
+		config: map[string]string{}
+		initialized: false
+	}
+}
+
+pub fn (mut service ConfigService) initialize() {
+	if service.initialized {
+		return
+	}
+	
+	// Set defaults
+	service.config['app.name'] = 'Desktop App'
+	service.config['app.version'] = '1.0.0'
+	service.config['log.level'] = 'info'
+	
+	service.initialized = true
+}
+
+pub fn (service ConfigService) get(key string) string {
+	return service.config[key] or { '' }
+}
+
+pub fn (mut service ConfigService) set(key string, value string) {
+	service.config[key] = value
+}
+
+pub fn (service ConfigService) get_all() map[string]string {
+	return service.config.clone()
+}
+
+// ============================================================================
+// Example: Database Service with DI Dependencies
+// ============================================================================
+
+@[heap]
+pub struct DatabaseService {
+mut:
+	config      &ConfigService
+	logging     &LoggingService
+	db_path     string
+	initialized bool
+}
+
+// Factory function that injects dependencies
+pub fn create_database_service(config &ConfigService, logging &LoggingService) &DatabaseService {
+	return &DatabaseService{
+		config: config
+		logging: logging
+		db_path: ''
+		initialized: false
+	}
+}
+
+pub fn (mut service DatabaseService) initialize() {
+	if service.initialized {
+		return
+	}
+	
+	service.db_path = service.config.get('db.path')
+	if service.db_path == '' {
+		service.db_path = 'data/app.db.json'
+	}
+	
+	service.logging.info('DatabaseService initialized with path: ${service.db_path}')
+	service.initialized = true
+}
+
+pub fn (service DatabaseService) get_path() string {
+	return service.db_path
+}
+
+// ============================================================================
+// Example: User Service with Multiple DI Dependencies
+// ============================================================================
+
+@[heap]
+pub struct UserService {
+mut:
+	config      &ConfigService
+	logging     &LoggingService
+	database    &DatabaseService
+	users       []User
+	initialized bool
+}
+
+pub struct User {
+pub mut:
+	id       int
+	name     string
+	email    string
+	role     string
+	created  string
+}
+
+// Factory function with multiple dependencies
+pub fn create_user_service(
+	config &ConfigService,
+	logging &LoggingService,
+	database &DatabaseService
+) &UserService {
+	return &UserService{
+		config: config
+		logging: logging
+		database: database
+		users: []User{}
+		initialized: false
+	}
+}
+
+pub fn (mut service UserService) initialize() {
+	if service.initialized {
+		return
+	}
+	
+	service.logging.info('UserService initialized')
+	
+	// Load initial data
+	service.load_demo_data()
+	
+	service.initialized = true
+}
+
+fn (mut service UserService) load_demo_data() {
+	service.logging.debug('Loading demo user data')
+	
+	now := time.now().custom_format('YYYY-MM-DD HH:mm:ss')
+	
+	service.users = [
+		User{
+			id: 1
+			name: 'John Doe'
+			email: 'john@example.com'
+			role: 'admin'
+			created: now
+		},
+		User{
+			id: 2
+			name: 'Jane Smith'
+			email: 'jane@example.com'
+			role: 'user'
+			created: now
+		},
+	]
+	
+	service.logging.info('Loaded ${service.users.len} demo users')
+}
+
+pub fn (service UserService) get_all() []User {
+	return service.users.clone()
+}
+
+pub fn (service UserService) get_by_id(id int) ?User {
+	for user in service.users {
+		if user.id == id {
+			return user
+		}
+	}
+	return none
+}
+
+pub fn (mut service UserService) create(name string, email string, role string) ?User {
+	// Validate
+	if name.len == 0 || email.len == 0 {
+		service.logging.error('Cannot create user: missing required fields')
+		return none
+	}
+	
+	// Generate ID
+	mut max_id := 0
+	for user in service.users {
+		if user.id > max_id {
+			max_id = user.id
+		}
+	}
+	
+	now := time.now().custom_format('YYYY-MM-DD HH:mm:ss')
+	
+	user := User{
+		id: max_id + 1
+		name: name
+		email: email
+		role: role
+		created: now
+	}
+	
+	service.users << user
+	service.logging.info('Created user: ${user.email}')
+	
+	return user
+}
+
+pub fn (mut service UserService) delete(id int) bool {
+	mut found := false
+	mut new_users := []User{}
+	
+	for user in service.users {
+		if user.id == id {
+			found = true
+			service.logging.info('Deleted user: ${user.email}')
+		} else {
+			new_users << user
+		}
+	}
+	
+	service.users = new_users
+	return found
+}
+
+// ============================================================================
+// DI Module Definition (like Angular NgModule)
+// ============================================================================
+
+// Create application module with all providers
+pub fn create_app_module() di.DIModule {
+	mut module := di.create_module('AppModule')
+	
+	// Register LoggingService as singleton
+	logging_provider := di.provide_factory('&LoggingService', create_logging_service, .singleton)
+	module.add_provider(logging_provider)
+	
+	// Register ConfigService as singleton
+	config_provider := di.provide_factory('&ConfigService', create_config_service, .singleton)
+	module.add_provider(config_provider)
+	
+	// Register DatabaseService as singleton (depends on ConfigService and LoggingService)
+	// Note: In real implementation, you'd use a factory that resolves dependencies
+	db_provider := di.provide_factory('&DatabaseService', fn () &DatabaseService {
+		config := di.global_inject['&ConfigService']('ConfigService') or {
+			return create_config_service()
+		}
+		logging := di.global_inject['&LoggingService']('LoggingService') or {
+			return create_logging_service()
+		}
+		return create_database_service(config, logging)
+	}, .singleton)
+	module.add_provider(db_provider)
+	
+	// Register UserService as singleton (depends on multiple services)
+	user_provider := di.provide_factory('&UserService', fn () &UserService {
+		config := di.global_inject['&ConfigService']('ConfigService') or {
+			return create_config_service()
+		}
+		logging := di.global_inject['&LoggingService']('LoggingService') or {
+			return create_logging_service()
+		}
+		database := di.global_inject['&DatabaseService']('DatabaseService') or {
+			return create_database_service(config, logging)
+		}
+		return create_user_service(config, logging, database)
+	}, .singleton)
+	module.add_provider(user_provider)
+	
+	return module
+}
+
+// Initialize DI container with all services
+pub fn initialize_di() di.Injector {
+	// Create root injector
+	mut injector := di.create_root_injector()
+	
+	// Create and register app module
+	mut app_module := create_app_module()
+	app_module.register_with(mut injector)
+	
+	// Initialize all services
+	mut logging := injector.get['&LoggingService']('LoggingService') or {
+		println('Failed to get LoggingService')
+		return injector
+	}
+	logging.initialize()
+	
+	mut config := injector.get['&ConfigService']('ConfigService') or {
+		println('Failed to get ConfigService')
+		return injector
+	}
+	config.initialize()
+	
+	mut database := injector.get['&DatabaseService']('DatabaseService') or {
+		println('Failed to get DatabaseService')
+		return injector
+	}
+	database.initialize()
+	
+	mut user_service := injector.get['&UserService']('UserService') or {
+		println('Failed to get UserService')
+		return injector
+	}
+	user_service.initialize()
+	
+	println('DI container initialized successfully')
+	
+	return injector
+}

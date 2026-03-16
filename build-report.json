@@ -1,16 +1,16 @@
 {
-  "timestamp": "2026-03-16T10:41:47Z",
+  "timestamp": "2026-03-16T17:01:01Z",
   "environment": "development",
   "profile": "standard",
-  "duration": 0,
-  "durationFormatted": "0s",
+  "duration": 4,
+  "durationFormatted": "4s",
   "cache": {
     "enabled": true,
-    "frontend": "a88166c91ab3878cfd211dc010e0bf0a",
-    "backend": "14baa00ed25ce7c5519b15bfd137466e"
+    "frontend": "5789eaa2f0f6493dc28f8383be45c944",
+    "backend": "fc7ea76e9761c9c97f34557dcafb7485"
   },
   "frontend": {
-    "outputDir": "/run/media/naranyala/Data/projects-remote/vlang-webui-angular-rsbuild/frontend/dist/browser/browser",
+    "outputDir": "/run/media/naranyala/Data/projects-remote/vlang-webui-angular-rsbuild/frontend/dist/browser",
     "exists": true
   },
   "backend": {

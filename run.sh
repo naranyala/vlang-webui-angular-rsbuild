@@ -20,7 +20,7 @@ set -euo pipefail
 # ============================================================================
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly FRONTEND_DIR="${SCRIPT_DIR}/frontend"
-readonly BUILD_OUTPUT_DIR="${FRONTEND_DIR}/dist/browser/browser"
+readonly BUILD_OUTPUT_DIR="${FRONTEND_DIR}/dist/browser"
 readonly BUILD_DIR="${SCRIPT_DIR}/build"
 readonly CACHE_DIR="${SCRIPT_DIR}/.build-cache"
 readonly REPORT_FILE="${SCRIPT_DIR}/build-report.json"

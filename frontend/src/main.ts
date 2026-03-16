@@ -1,40 +1,72 @@
-/**
- * Angular 19 Bootstrap - AOT Mode (No JIT)
- * 
- * Rsbuild compiles Angular templates at build time (AOT)
- * So we don't need JIT compiler at runtime
- */
-
 import 'zone.js';
-
+import '@angular/compiler';
 import './winbox-loader';
-
-import { bootstrapApplication } from '@angular/platform-browser';
-import { AppComponent } from './app/app.component';
-import { provideZoneChangeDetection } from '@angular/core';
 import { ErrorHandler } from '@angular/core';
-import { GlobalErrorHandler } from './core/global-error.handler';
+import { bootstrapApplication } from '@angular/platform-browser';
+import { AppComponent } from './views/app.component';
 
-console.log('[Angular] Starting bootstrap (AOT mode)...');
+const logger = console;
 
-// Disable any potential JIT compilation at runtime
-(window as any).__Ng_Jit_Mode = false;
+const debugApiWindow = window as unknown as {
+  __FRONTEND_EVENT_BUS__?: any;
+};
 
-// Bootstrap with AOT (no compiler needed at runtime)
-bootstrapApplication(AppComponent, {
-  providers: [
-    provideZoneChangeDetection(),
-    { provide: ErrorHandler, useClass: GlobalErrorHandler },
-  ],
-}).then(() => {
-  console.log('[Angular] Bootstrap successful!');
-}).catch((err) => {
-  console.error('[Angular] Bootstrap failed:', err);
-  // Show error in UI
-  const container = document.getElementById('error-container');
-  const msgEl = document.getElementById('error-message');
-  const stackEl = document.getElementById('error-stack');
-  if (msgEl) msgEl.textContent = err.message || String(err);
-  if (stackEl && err.stack) stackEl.textContent = err.stack;
-  if (container) container.classList.add('visible');
-});
+// Simple event bus for backward compatibility
+class SimpleEventBus {
+  private subscribers = new Map<string, Set<(payload: any) => void>>();
+
+  init(app: string, replaySize?: number) {}
+
+  publish(event: string, payload: any) {
+    const handlers = this.subscribers.get(event) || new Set();
+    for (const handler of handlers) {
+      handler(payload);
+    }
+  }
+
+  subscribe(event: string, handler: (payload: any) => void) {
+    if (!this.subscribers.has(event)) {
+      this.subscribers.set(event, new Set());
+    }
+    this.subscribers.get(event)!.add(handler);
+  }
+}
+
+const eventBus = new SimpleEventBus();
+eventBus.init('app', 300);
+debugApiWindow.__FRONTEND_EVENT_BUS__ = eventBus;
+
+logger.info('Starting Angular bootstrap');
+
+try {
+  bootstrapApplication(AppComponent, {
+    providers: [],
+  })
+    .then(appRef => {
+      logger.info('Angular bootstrap completed successfully');
+
+      // Global error handler
+      window.addEventListener('error', event => {
+        event.preventDefault();
+        const error = event.error ?? event.message ?? 'Unknown error';
+        logger.error('Global error:', error);
+      });
+
+      // Unhandled promise rejection handler
+      window.addEventListener('unhandledrejection', event => {
+        event.preventDefault();
+        const reason = event.reason ?? 'Unknown rejection';
+        logger.error('Unhandled promise rejection:', reason);
+      });
+
+      // Publish app ready event
+      eventBus.publish('app:ready', { timestamp: Date.now() });
+    })
+    .catch(err => {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      logger.error('Angular bootstrap failed:', errorMessage);
+    });
+} catch (err: unknown) {
+  const errorMessage = err instanceof Error ? err.message : String(err);
+  logger.error('Bootstrap threw synchronously:', errorMessage);
+}

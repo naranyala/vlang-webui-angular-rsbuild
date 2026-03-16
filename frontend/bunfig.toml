@@ -1,19 +1,9 @@
-# Bun Test Configuration
-# https://bun.sh/docs/cli/test
+# Bun configuration for Angular + Rspack project
 
-[test]
-# Test file patterns
-root = "./src"
-include = ["**/*.spec.ts"]
-exclude = ["**/node_modules/**", "**/dist/**", "**/e2e/**"]
+[install]
+# Use Bun's native installer
+prefer-offline = true
 
-# Coverage
-coverage = true
-coverageReporter = ["text", "lcov"]
-coverageDir = "./coverage"
-
-# Test execution
-timeout = 30000
-
-# TypeScript
-tsconfig = "./tsconfig.json"
+[run]
+# Use Bun's JavaScript runtime
+shell = "bun"

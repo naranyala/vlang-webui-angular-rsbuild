@@ -105,8 +105,8 @@ fn main() {
 
 	app.logging.success('All handlers bound successfully')
 
-	// Set root folder (Angular 19+ outputs to dist/browser/browser/)
-	root_folder := 'frontend/dist/browser/browser'
+	// Set root folder (Angular outputs to dist/browser)
+	root_folder := 'frontend/dist/browser'
 	app.logging.info('Setting root folder: ${root_folder}')
 
 	if !verify_root_folder(root_folder) {

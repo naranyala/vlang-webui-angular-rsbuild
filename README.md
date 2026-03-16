@@ -1,30 +1,6 @@
 # Vlang WebUI Angular Application
 
-A full-stack desktop application built with V language backend and Angular 19 frontend, connected via WebUI.
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Quick Start](#quick-start)
-- [Project Structure](#project-structure)
-- [Key Features](#key-features)
-- [Documentation](#documentation)
-- [Requirements](#requirements)
-- [Build Commands](#build-commands)
-- [License](#license)
-
----
-
-## Overview
-
-This project provides a desktop application framework with:
-
-- **Backend**: V language with service-based architecture and dependency injection patterns
-- **Frontend**: Angular 19 with bleeding-edge features including signals and standalone components
-- **Communication**: WebUI bridge supporting multiple communication patterns (WebUI binding, custom events, RPC, message bus)
-- **Features**: System monitoring, file operations, network management, SQLite CRUD operations, and comprehensive DevTools
-
----
+A desktop application framework with V language backend and Angular 19 frontend.
 
 ## Quick Start
 
@@ -32,144 +8,98 @@ This project provides a desktop application framework with:
 # Install dependencies
 ./run.sh install
 
-# Build application
+# Build and run (default)
+./run.sh
+
+# Build only
 ./run.sh build
 
-# Run application
-./run.sh run
+# Run tests
+cd frontend && bun test
 ```
 
-For development mode with hot reload:
+## Overview
 
-```bash
-./run.sh dev
-```
-
----
+**Backend**: V language with 8 service modules  
+**Frontend**: Angular 19 with standalone components and signals  
+**UI**: macOS Finder-inspired layout with WinBox.js windows  
+**Communication**: WebUI function binding (RPC-style)
 
 ## Project Structure
 
 ```
 vlang-webui-angular-rsbuild/
-├── src/                          # V Backend
-│   ├── app.v                     # Application struct and handlers
-│   ├── main.v                    # Entry point and WebUI bindings
-│   ├── services/                 # Business services
-│   │   ├── logging_service.v
-│   │   ├── system_info_service.v
-│   │   ├── file_service.v
-│   │   ├── network_service.v
-│   │   ├── config_service.v
-│   │   ├── database.v
-│   │   ├── user_service.v
-│   │   └── devtools_service.v
-│   ├── di/                       # Dependency injection module
-│   ├── communication/            # Communication patterns
-│   └── errors/                   # Error handling
+├── src/                      # V Backend
+│   ├── main.v               # Entry point (197 lines)
+│   ├── app.v                # Application logic (337 lines)
+│   └── services/            # 8 service modules
 │
-├── frontend/                     # Angular Frontend
-│   ├── src/
-│   │   ├── app/                  # Main app component
-│   │   ├── services/             # Angular services
-│   │   ├── models/               # Data models
-│   │   ├── communication/        # Communication patterns
-│   │   └── utils/                # Utilities
-│   └── dist/browser/             # Build output
+├── frontend/src/            # Angular Frontend
+│   ├── app/                 # Main component
+│   ├── components/layout/   # Finder layout, split panes
+│   ├── core/                # WinBox, error handling
+│   ├── services/            # 6 Angular services
+│   └── models/              # Data models
 │
-├── docs/                         # Documentation
-│   ├── README.md                 # This file
-│   ├── BACKEND_SERVICES.md       # Backend services documentation
-│   ├── FRONTEND_SERVICES.md      # Frontend services documentation
-│   ├── COMMUNICATION_PATTERNS.md # Communication patterns guide
-│   ├── DEPENDENCY_INJECTION.md   # DI system documentation
-│   ├── BUILD_PIPELINE.md         # Build pipeline documentation
-│   └── OPTIMIZATION_STATUS.md    # Optimization status
-│
-├── run.sh                        # Build script
-├── v.mod                         # V module config
-└── package.json                  # Node.js dependencies
+├── build/                   # Compiled binary (768K)
+├── docs/                    # Documentation
+└── audit/                   # Audit reports
 ```
 
----
-
-## Key Features
+## Features
 
 ### Backend Services
 
-- **LoggingService**: Centralized logging with levels and export
-- **SystemInfoService**: System monitoring (CPU, memory, disk, network)
-- **FileService**: Secure file operations with path validation
-- **NetworkService**: Network interface and statistics
-- **ConfigService**: Configuration management
-- **DatabaseService**: SQLite/JSON persistence
-- **UserService**: User CRUD operations
-- **DevToolsService**: Development tools and diagnostics
+- **LoggingService** - Centralized logging with levels
+- **SystemInfoService** - CPU, memory, disk monitoring
+- **FileService** - Secure file operations with path validation
+- **NetworkService** - Network interfaces and statistics
+- **ConfigService** - Configuration management
+- **DatabaseService** - SQLite/JSON persistence
+- **UserService** - User CRUD operations
+- **DevToolsService** - Development tools and diagnostics
 
-### Frontend Services
+### Frontend
 
-- **WebUIService**: Backend communication via WebUI
-- **CommunicationService**: Alternative communication patterns (pub/sub, event store, command bus, RPC)
-- **ErrorService**: Centralized error handling
-- **LoggerService**: Logging with levels
-- **UserService**: User management with validation
-
-### Communication Patterns
-
-1. **WebUI Function Binding**: Primary RPC-style communication
-2. **Message Bus**: Pub/sub pattern for events
-3. **Event Store**: Event sourcing for audit trails
-4. **Command Bus**: CQRS command pattern
-5. **RPC Server**: Direct function invocation
-6. **Channels**: Typed message passing
-
----
-
-## Documentation
-
-Detailed documentation is available in the `docs/` directory:
-
-| Document | Description |
-|----------|-------------|
-| [50-backend-services.md](docs/50-backend-services.md) | Backend services API and usage |
-| [54-frontend-services.md](docs/54-frontend-services.md) | Frontend services API and usage |
-| [42-communication-patterns.md](docs/42-communication-patterns.md) | Communication patterns guide |
-| [51-dependency-injection.md](docs/51-dependency-injection.md) | DI system documentation |
-| [60-build-pipeline.md](docs/60-build-pipeline.md) | Build pipeline documentation |
-| [91-optimization-status.md](docs/91-optimization-status.md) | Optimization and refactoring status |
-
----
+- **WebUIService** - Backend communication via WebUI
+- **ErrorService** - Centralized error handling
+- **LoggerService** - Client-side logging
+- **FinderLayoutComponent** - macOS-inspired two-column layout
+- **SplitPaneComponent** - Resizable panes with drag support
 
 ## Requirements
 
-### System
-
-- **OS**: Linux (Ubuntu/Debian tested)
-- **Kernel**: 4.4+
-
-### Build Tools
-
-- **V**: 0.5.1+ (https://vlang.io)
+- **OS**: Linux
+- **V**: 0.5.1+
 - **GCC**: 9.0+
-- **Bun**: 1.0+ (recommended) or **npm**: 8.0+
-
-### Runtime
-
-- **Browser**: Chrome, Firefox, Edge (for WebUI)
-
----
+- **Bun**: 1.0+ (or npm 8.0+)
 
 ## Build Commands
 
 | Command | Description |
 |---------|-------------|
-| `./run.sh install` | Install frontend dependencies |
-| `./run.sh build` | Build frontend and backend |
+| `./run.sh` | Build and run |
+| `./run.sh build` | Build only |
 | `./run.sh run` | Run existing binary |
-| `./run.sh dev` | Build and run in development mode |
-| `./run.sh clean` | Remove build artifacts |
-| `./run.sh clean-all` | Deep clean (including node_modules) |
+| `./run.sh test` | Run tests |
+| `./run.sh clean` | Clean build artifacts |
 
----
+## Documentation
+
+- [Documentation Index](docs/00-index.md) - All documentation
+- [UI Layout](docs/35-ui-layout.md) - Finder-inspired layout
+- [Backend Services](docs/50-backend-services.md) - Service API reference
+- [Frontend Services](docs/54-frontend-services.md) - Service API reference
+- [Build Pipeline](docs/60-build-pipeline.md) - Build commands and process
+- [Testing Guide](docs/15-testing-guide.md) - How to run and write tests
+
+## Audit Status
+
+**Latest**: 2026-03-16  
+**Status**: Production Ready  
+**Grade**: A-
+
+See [audit/README.md](audit/README.md) for details.
 
 ## License
 
@@ -177,5 +107,5 @@ MIT
 
 ---
 
-*Last updated: 2026-03-16*
-*Version: 2.0.0*
+*Last updated: 2026-03-16*  
+*Version: 3.0*

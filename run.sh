@@ -125,12 +125,12 @@ check_frontend_cache() {
     if [ -f "${cached_hash_file}" ] && [ -d "${cached_output}" ]; then
         local cached_hash=$(cat "${cached_hash_file}")
         if [ "${current_hash}" = "${cached_hash}" ]; then
-            log_info "Frontend cache hit ✅"
+            log_info "Frontend cache hit OK"
             return 0
         fi
     fi
 
-    log_info "Frontend cache miss ❌"
+    log_info "Frontend cache miss FAILED"
     return 1
 }
 
@@ -153,12 +153,12 @@ check_backend_cache() {
     if [ -f "${cached_hash_file}" ] && [ -f "${cached_binary}" ]; then
         local cached_hash=$(cat "${cached_hash_file}")
         if [ "${current_hash}" = "${cached_hash}" ]; then
-            log_info "Backend cache hit ✅"
+            log_info "Backend cache hit OK"
             return 0
         fi
     fi
 
-    log_info "Backend cache miss ❌"
+    log_info "Backend cache miss FAILED"
     return 1
 }
 
@@ -215,7 +215,7 @@ check_prerequisites() {
         exit 1
     fi
 
-    log_success "Prerequisites check complete ✅"
+    log_success "Prerequisites check complete OK"
     echo ""
 }
 
@@ -234,16 +234,16 @@ run_linting() {
     # Frontend linting
     if command -v bun &> /dev/null; then
         if bun run lint 2>&1; then
-            log_success "Frontend linting passed ✅"
+            log_success "Frontend linting passed OK"
         else
-            log_error "Frontend linting failed ❌"
+            log_error "Frontend linting failed FAILED"
             cd "${SCRIPT_DIR}"
             return 1
         fi
     fi
 
     cd "${SCRIPT_DIR}"
-    log_success "Linting complete ✅"
+    log_success "Linting complete OK"
     echo ""
 }
 
@@ -265,9 +265,9 @@ run_tests() {
 
     if command -v bun &> /dev/null; then
         if bun test 2>&1; then
-            log_success "Frontend tests passed ✅"
+            log_success "Frontend tests passed OK"
         else
-            log_error "Frontend tests failed ❌"
+            log_error "Frontend tests failed FAILED"
             failed=1
         fi
     fi
@@ -277,14 +277,14 @@ run_tests() {
     # Backend tests
     log_test "Running backend tests..."
     if v test ./src 2>&1; then
-        log_success "Backend tests passed ✅"
+        log_success "Backend tests passed OK"
     else
-        log_error "Backend tests failed ❌"
+        log_error "Backend tests failed FAILED"
         failed=1
     fi
 
     local test_duration=$(get_duration $test_start)
-    log_success "Tests complete in $(format_duration $test_duration) ✅"
+    log_success "Tests complete in $(format_duration $test_duration) OK"
 
     if [ $failed -eq 1 ]; then
         log_error "Some tests failed!"
@@ -303,7 +303,7 @@ build_frontend() {
 
     # Check cache
     if check_frontend_cache; then
-        log_success "Frontend build skipped (cached) ✅"
+        log_success "Frontend build skipped (cached) OK"
         return 0
     fi
 
@@ -363,7 +363,7 @@ build_frontend() {
     if [ -d "${BUILD_OUTPUT_DIR}" ]; then
         local FILE_COUNT=$(find "${BUILD_OUTPUT_DIR}" -type f | wc -l)
         local TOTAL_SIZE=$(du -sh "${BUILD_OUTPUT_DIR}" 2>/dev/null | cut -f1)
-        log_success "Frontend built: ${FILE_COUNT} files (${TOTAL_SIZE}) in $(format_duration $build_duration) ✅"
+        log_success "Frontend built: ${FILE_COUNT} files (${TOTAL_SIZE}) in $(format_duration $build_duration) OK"
 
         # Copy WinBox
         copy_winbox
@@ -417,7 +417,7 @@ build_v_app() {
 
     # Check cache
     if check_backend_cache; then
-        log_success "Backend build skipped (cached) ✅"
+        log_success "Backend build skipped (cached) OK"
         return 0
     fi
 
@@ -443,7 +443,7 @@ build_v_app() {
 
     if [ -f "${BINARY_PATH}" ]; then
         local BINARY_SIZE=$(du -h ${BINARY_PATH} | cut -f1)
-        log_success "V app built: ${BINARY_PATH} (${BINARY_SIZE}) in $(format_duration $build_duration) ✅"
+        log_success "V app built: ${BINARY_PATH} (${BINARY_SIZE}) in $(format_duration $build_duration) OK"
 
         # Save cache
         save_backend_cache
@@ -496,8 +496,13 @@ EOF
 cmd_dev() {
     log_step "Starting development mode..."
 
+    # Disable cache for dev mode to always rebuild
+    ENABLE_CACHE=false
+
     check_prerequisites
     init_cache
+
+    log_info "Building frontend and backend..."
 
     build_frontend || { log_error "Failed to build frontend"; exit 1; }
     build_v_app || { log_error "Failed to build V app"; exit 1; }
@@ -511,7 +516,7 @@ cmd_dev() {
     echo -e "${CYAN}========================================${NC}"
     echo ""
 
-    ./${BINARY_PATH} 2>&1
+    "${BINARY_PATH}" 2>&1
 }
 
 cmd_build() {
@@ -534,7 +539,7 @@ cmd_build() {
     generate_report
 
     local total_duration=$(get_duration $BUILD_START_TIME)
-    log_success "Full build complete in $(format_duration $total_duration) ✅"
+    log_success "Full build complete in $(format_duration $total_duration) OK"
 }
 
 cmd_run() {
@@ -544,7 +549,7 @@ cmd_run() {
     fi
 
     log_info "Running existing binary..."
-    ./${BINARY_PATH} 2>&1
+    "${BINARY_PATH}" 2>&1
 }
 
 cmd_test() {
@@ -577,7 +582,7 @@ cmd_clean() {
         log_info "Removed: ${FRONTEND_DIR}/dist-angular"
     fi
 
-    log_success "Clean complete ✅"
+    log_success "Clean complete OK"
 }
 
 cmd_clean_all() {
@@ -600,7 +605,7 @@ cmd_clean_all() {
         log_info "Removed: ${CACHE_DIR}"
     fi
 
-    log_success "Deep clean complete ✅"
+    log_success "Deep clean complete OK"
 }
 
 cmd_install() {
@@ -625,7 +630,7 @@ cmd_install() {
     fi
 
     cd "${SCRIPT_DIR}"
-    log_success "Dependencies installed ✅"
+    log_success "Dependencies installed OK"
 }
 
 cmd_watch() {
@@ -694,20 +699,20 @@ cmd_ci() {
 
     cmd_build
 
-    log_success "CI pipeline complete ✅"
+    log_success "CI pipeline complete OK"
 }
 
 cmd_help() {
     echo -e "${BOLD}Usage:${NC} ./run.sh [command] [options]"
     echo ""
     echo -e "${BOLD}Commands:${NC}"
-    echo "  dev          Build and run in development mode"
-    echo "  build        Build frontend + backend (default)"
-    echo "  run          Run existing binary"
+    echo "  dev          Build and run (default)"
+    echo "  build        Build frontend + backend only"
+    echo "  run          Run existing binary (no rebuild)"
     echo "  test         Run tests only"
     echo "  lint         Run linters only"
     echo "  clean        Remove build artifacts"
-    echo "  clean-all    Deep clean (including node_modules and cache)"
+    echo "  clean-all    Deep clean (including node_modules)"
     echo "  install      Install frontend dependencies"
     echo "  watch        Watch mode (hot reload)"
     echo "  stats        Show build statistics"
@@ -723,9 +728,10 @@ cmd_help() {
     echo "  ENABLE_PARALLEL Enable parallel builds (true/false)"
     echo ""
     echo -e "${BOLD}Examples:${NC}"
-    echo "  ./run.sh                    # Build and run"
+    echo "  ./run.sh                    # Build and run (default)"
+    echo "  ./run.sh dev                # Build and run"
     echo "  ./run.sh build              # Build only"
-    echo "  ./run.sh dev                # Development mode"
+    echo "  ./run.sh run                # Run existing binary"
     echo "  ./run.sh test               # Run tests"
     echo "  ./run.sh ci                 # Full CI pipeline"
     echo "  ENV=production ./run.sh build  # Production build"
@@ -737,7 +743,7 @@ cmd_help() {
 # Main
 # ============================================================================
 main() {
-    local cmd="${1:-build}"
+    local cmd="${1:-dev}"
 
     case "$cmd" in
         dev)
